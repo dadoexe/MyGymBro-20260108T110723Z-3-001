@@ -1,4 +1,5 @@
 package com.example.mygymbro.model;
+import java.util.ArrayList;
 import java.util.List;
 
 public class Athlete extends User {
@@ -6,7 +7,8 @@ public class Athlete extends User {
     private float weight;
     private float height;
     private int age;
-    private List<WorkoutPlan> pianiUtente= null;
+
+    private List<WorkoutPlan> pianiUtente = new ArrayList<>();
 
     public Athlete(int id, String username, String password, String name, String email, String cognome, float weight, float height) {
         super(id, username, password, name,cognome, email); // Passa i dati comuni al padre
@@ -40,4 +42,7 @@ public class Athlete extends User {
     public void addWorkoutPlan(WorkoutPlan workoutPlan){
         this.pianiUtente.add(workoutPlan);
     }
+
+
+
 }

@@ -1,5 +1,6 @@
 package com.example.mygymbro.model;
 
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 public class WorkoutPlan {
@@ -8,18 +9,21 @@ public class WorkoutPlan {
     private String name;
     private Date creationDate;
     private String comment;
-    private List<WorkoutExercise> listaEsercizi;
+    private List<WorkoutExercise> exercises = new ArrayList<>();
+    private Athlete athlete;
 
-    public WorkoutPlan(int id, String name, Date creationDate, String comment) {
+    // Costruttore Completo
+    public WorkoutPlan(int id, String name, String comment, Date creationDate, Athlete athlete) {
         this.id = id;
         this.name = name;
-        this.creationDate = creationDate;
         this.comment = comment;
+        this.creationDate = creationDate;
+        this.athlete = athlete; // Assegnazione
     }
 
     public void addExercise(WorkoutExercise ex) {
 
-        listaEsercizi.add(ex);
+        exercises.add(ex);
     }
 
     public void setId(int id) {
@@ -39,7 +43,7 @@ public class WorkoutPlan {
     }
 
     public void removeExercise(WorkoutExercise ex) {
-        listaEsercizi.remove(ex);
+        exercises.remove(ex);
     }
 
     public int getId() {
@@ -58,13 +62,20 @@ public class WorkoutPlan {
         return comment;
     }
 
-    public List<WorkoutExercise> getListaEsercizi() {
-        return listaEsercizi;
+    public List<WorkoutExercise> getExercises() {
+        return exercises;
+    }
+
+    public void setAthlete(Athlete athlete) {
+        this.athlete = athlete;
+    }
+    public Athlete getAthlete() {
+        return athlete;
     }
 
     public int getEstimatedMinutes() {
         int totalSeconds = 0;
-        for(WorkoutExercise ex : listaEsercizi) {
+        for(WorkoutExercise ex : exercises) {
             totalSeconds += ex.getSets() * (45 + ex.getRestTime()); // 45s media per serie
         }
         return totalSeconds / 60;

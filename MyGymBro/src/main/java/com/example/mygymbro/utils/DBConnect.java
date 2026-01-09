@@ -5,9 +5,9 @@ import java.sql.DriverManager;
 import java.sql.SQLException;
 
 public class DBConnect {
-private static String DB_Url = "jdbc:mysql://localhost:3306/";
-private static String DB_User = "root";
-private static String DB_Pass = "";
+    private static String DB_Url = "jdbc:mysql://localhost:3306/gymbro_db";
+    private static String DB_User = "root";
+    private static String DB_Pass = "";
 
 public static Connection getConnection()  {
     try{

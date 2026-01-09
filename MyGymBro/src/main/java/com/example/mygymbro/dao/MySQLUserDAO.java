@@ -2,12 +2,10 @@ package com.example.mygymbro.dao;
 import com.example.mygymbro.model.Athlete;
 import com.example.mygymbro.model.PersonalTrainer;
 import com.example.mygymbro.model.User;
+import com.example.mygymbro.utils.DAOUtils;
 import com.example.mygymbro.utils.DBConnect;
 
-import java.sql.Connection;
-import java.sql.ResultSet;
-import java.sql.SQLException;
-import java.sql.PreparedStatement;
+import java.sql.*;
 
 public class MySQLUserDAO {
 
@@ -75,4 +73,101 @@ public class MySQLUserDAO {
         return user;
     }
 
+    public void saveAthlete(Athlete athlete) throws SQLException{
+        // Corrisponde ai campi in User.java
+        String userQuery = "INSERT INTO user (username, password, name, cognome, email) VALUES (?, ?, ?, ?, ?)";
+        // Il primo '?' è la Foreign Key (l'ID generato dalla userQuery)
+        // Poi inseriamo i campi specifici della classe Athlete
+        String athleteQuery = "INSERT INTO athlete (user_id, weight, height, age) VALUES (?, ?, ?, ?)";
+        String trainerQuery = "INSERT INTO personal_trainer (user_id, cert_code) VALUES (?, ?)";
+
+        Connection connection = null;
+        PreparedStatement stmtUser = null;
+        PreparedStatement stmtAthlete = null;
+        ResultSet generatedKeys = null;
+        try {
+            connection = DBConnect.getConnection();
+            connection.setAutoCommit(false);
+
+            stmtUser = connection.prepareStatement(userQuery);
+            stmtUser.setString(1, athlete.getUsername());
+            stmtUser.setString(2, athlete.getPassword());
+            stmtUser.setString(3, athlete.getName());
+            stmtUser.setString(4, athlete.getCognome());
+            stmtUser.setString(5, athlete.getEmail());
+            stmtUser.executeUpdate();
+
+            //recupero id generato
+            generatedKeys = stmtUser.getGeneratedKeys();
+            int newId = -1; //sentinel value
+            if (generatedKeys.next()) {
+                newId = generatedKeys.getInt(1);
+                athlete.setId(newId); //aggiorno oggetto in memoria
+            }else{throw new SQLException("Creazione fallita, nessun id ottenuto");}
+
+            //ora salvo in Athlete
+            stmtAthlete = connection.prepareStatement(athleteQuery);
+            stmtAthlete.setInt(1, newId);
+            stmtAthlete.setFloat(2, athlete.getWeight());
+            stmtAthlete.setFloat(3, athlete.getHeight());
+            stmtAthlete.setInt(4, athlete.getAge());
+            stmtAthlete.executeUpdate();
+            connection.commit(); //confermo
+        }catch (SQLException e){
+            if(connection!=null){connection.rollback();} //rollback in caso di errore
+            throw e;
+        }finally {
+            DAOUtils.close(connection, stmtUser, generatedKeys);
+            DAOUtils.closeStatement(stmtAthlete);
+        }
+
+    }
+
+    public void saveTrainer(PersonalTrainer trainer) throws SQLException {
+        String userQuery = "INSERT INTO user (username, password, name, cognome, email) VALUES (?, ?, ?, ?, ?)";
+        String trainerQuery = "INSERT INTO personal_trainer (user_id, cert_code) VALUES (?, ?)";
+
+        Connection conn = null;
+        PreparedStatement stmtUser = null;
+        PreparedStatement stmtTrainer = null;
+        ResultSet generatedKeys = null;
+
+        try {
+            conn = DBConnect.getConnection();
+            conn.setAutoCommit(false);
+
+            // --- STEP 1: Salvo in USER (Identico a sopra) ---
+            stmtUser = conn.prepareStatement(userQuery, Statement.RETURN_GENERATED_KEYS);
+            stmtUser.setString(1, trainer.getUsername());
+            stmtUser.setString(2, trainer.getPassword());
+            stmtUser.setString(3, trainer.getName());
+            stmtUser.setString(4, trainer.getCognome());
+            stmtUser.setString(5, trainer.getEmail());
+            stmtUser.executeUpdate();
+
+            generatedKeys = stmtUser.getGeneratedKeys();
+            int newId = -1;
+            if (generatedKeys.next()) {
+                newId = generatedKeys.getInt(1);
+                trainer.setId(newId);
+            } else {
+                throw new SQLException("Errore ID.");
+            }
+
+            // --- STEP 2: Salvo in PERSONAL_TRAINER ---
+            stmtTrainer = conn.prepareStatement(trainerQuery);
+            stmtTrainer.setInt(1, newId);                 // FK: user_id
+            stmtTrainer.setString(2, trainer.getCertCode()); // Campo 'certCode' dallo screen
+            stmtTrainer.executeUpdate();
+
+            conn.commit();
+
+        } catch (SQLException e) {
+            if (conn != null) conn.rollback();
+            throw e;
+        } finally {
+            DAOUtils.close(conn, stmtUser, generatedKeys);
+            DAOUtils.closeStatement(stmtTrainer);
+        }
+    }
 }
