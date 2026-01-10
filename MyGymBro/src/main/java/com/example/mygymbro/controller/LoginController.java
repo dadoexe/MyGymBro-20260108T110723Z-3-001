@@ -1,5 +1,6 @@
 package com.example.mygymbro.controller;
 
+import com.example.mygymbro.bean.UserBean;
 import com.example.mygymbro.dao.MySQLUserDAO;
 import com.example.mygymbro.dao.UserDAO;
 import com.example.mygymbro.model.User;
@@ -9,45 +10,62 @@ import java.sql.SQLException;
 
 public class LoginController implements Controller {
 
-    // 1. Usa l'Interfaccia, non la classe concreta (Dependency Injection)
     private UserDAO userDAO;
 
     public LoginController() {
-        // 2. Istanzia il DAO qui
         this.userDAO = new MySQLUserDAO();
     }
 
-    // Niente DTO. Se va tutto bene, il metodo finisce (void).
-    // Se va male, lancia un'eccezione.
-    public void autentica(String username, String password) throws LoginException, SQLException {
+    public void checkLogin(UserBean credentials) throws LoginException {
 
-        // Validazione input
-        if (username == null || password == null) {
-            throw new LoginException("Campi vuoti");
+        // 1. VALIDAZIONE INIZIALE (Spostata all'inizio!)
+        // Bisogna controllare che i dati ci siano PRIMA di usarli o chiamare il DB.
+        if(credentials.getUsername() == null || credentials.getUsername().isEmpty() ||
+                credentials.getPassword() == null || credentials.getPassword().isEmpty()) {
+            throw new LoginException("Campi vuoti: inserisci username e password.");
         }
 
-        // 3. Chiamata al metodo d'istanza (userDAO.find...)
-        // Errore tuo corretto: passo 'username', non 'String username'
-        User user = userDAO.findByUsername(username, password);
-
-        // Verifica password
-        if (user != null && user.getPassword().equals(password)) {
-
-            // 4. È il Controller Applicativo che setta la sessione!
-            SessionManager.getInstance().login(user);
-
-            // 5. È il Controller Applicativo che cambia pagina!
-            ApplicationController.getInstance().loadHome();
-
-        } else {
-            // Se le credenziali non vanno, lancio l'eccezione
-            throw new LoginException("Credenziali non valide");
+        User user = null;
+        try {
+            // 2. RECUPERO UTENTE (Solo username)
+            user = userDAO.findByUsername(credentials.getUsername());
+        } catch (SQLException e) {
+            e.printStackTrace(); // Log per te
+            throw new LoginException("Errore di connessione al Database.");
         }
+
+        // 3. VERIFICA PASSWORD
+        // Se l'utente è null (non esiste) o la password non coincide...
+        if (user == null || !user.getPassword().equals(credentials.getPassword())) {
+            // Messaggio utente, NON "errore db" (che confonde), ma "Credenziali errate"
+            throw new LoginException("Credenziali non valide.");
+        }
+
+        // 4. MAPPING DEI DATI (L'errore critico era qui!)
+        UserBean loggedUser = new UserBean();
+        // Prendo username/password da dove voglio (credentials o user sono uguali ora)
+        loggedUser.setUsername(user.getUsername());
+
+        // ATTENZIONE: Questi dati li devo prendere da 'user' (Database),
+        // NON da 'credentials' (Input Utente)!
+        // 'credentials' ha solo user e pass, gli altri campi sono null.
+        loggedUser.setNome(user.getName());       // <--- Corretto
+        loggedUser.setCognome(user.getCognome()); // <--- Corretto
+        loggedUser.setEmail(user.getEmail());     // <--- Corretto
+
+        // Se vuoi salvare anche il ruolo o l'id:
+        // loggedUser.setId(user.getId());
+
+        // 5. SESSIONE E NAVIGAZIONE (Corretti i Typos)
+        SessionManager.getInstance().login(loggedUser); // 'S' maiuscola
+        ApplicationController.getInstance().loadHome(); // 'Controller' corretto
     }
-
 
     @Override
     public void dispose() {
-
+        // Ricordati di implementarlo vuoto se richiesto dall'interfaccia
     }
 }
+
+
+

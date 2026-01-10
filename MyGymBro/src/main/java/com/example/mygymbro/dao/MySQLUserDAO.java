@@ -11,7 +11,7 @@ public class MySQLUserDAO implements UserDAO {
 
 
     @Override
-    public User findByUsername(String username, String password) throws SQLException {
+    public User findByUsername(String username) throws SQLException {
         // 1. QUERY UNIFICATA (LEFT JOIN)
         // Recuperiamo tutto in una volta: Dati Utente + Dati Atleta + Dati Trainer.
         // Se l'utente non è un atleta, le colonne di 'athlete' (a.weight, etc.) saranno NULL.
@@ -19,7 +19,7 @@ public class MySQLUserDAO implements UserDAO {
                 "FROM user u " +
                 "LEFT JOIN athlete a ON u.id = a.user_id " +
                 "LEFT JOIN personal_trainer t ON u.id = t.user_id " +
-                "WHERE u.username = ? AND u.password = ?";
+                "WHERE u.username = ?";
 
         Connection conn = null;
         PreparedStatement stmt = null;
@@ -30,7 +30,7 @@ public class MySQLUserDAO implements UserDAO {
             conn = DBConnect.getConnection();
             stmt = conn.prepareStatement(query);
             stmt.setString(1, username);
-            stmt.setString(2, password);
+
 
             rs = stmt.executeQuery();
 

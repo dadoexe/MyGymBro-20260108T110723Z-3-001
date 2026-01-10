@@ -6,6 +6,6 @@ import java.sql.SQLException;
 
 public interface UserDAO {
 
-    User findByUsername(String username, String password) throws SQLException; // login
+    User findByUsername(String username) throws SQLException; // login
     void save(User user) throws SQLException;
 }
