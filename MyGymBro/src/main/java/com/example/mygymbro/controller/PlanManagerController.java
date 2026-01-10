@@ -14,7 +14,9 @@ public class PlanManagerController implements Controller{
     private ExerciseDAO exerciseDAO;
     private WorkoutPlanBean currentPlan;
 
-    public PlanManagerController(){}
+    public PlanManagerController() {
+
+    }
 
 
     @Override

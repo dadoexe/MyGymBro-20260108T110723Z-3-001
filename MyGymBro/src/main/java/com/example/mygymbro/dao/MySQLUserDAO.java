@@ -6,74 +6,98 @@ import com.example.mygymbro.utils.DAOUtils;
 import com.example.mygymbro.utils.DBConnect;
 
 import java.sql.*;
+import java.sql.SQLException;
+public class MySQLUserDAO implements UserDAO {
 
-public class MySQLUserDAO {
 
-    public User findByUsername(String username, String password) throws SQLException{
+    @Override
+    public User findByUsername(String username, String password) throws SQLException {
+        // 1. QUERY UNIFICATA (LEFT JOIN)
+        // Recuperiamo tutto in una volta: Dati Utente + Dati Atleta + Dati Trainer.
+        // Se l'utente non è un atleta, le colonne di 'athlete' (a.weight, etc.) saranno NULL.
+        String query = "SELECT u.*, a.weight, a.height, a.age, t.cert_code " +
+                "FROM user u " +
+                "LEFT JOIN athlete a ON u.id = a.user_id " +
+                "LEFT JOIN personal_trainer t ON u.id = t.user_id " +
+                "WHERE u.username = ? AND u.password = ?";
 
-        // 1. Definisco la query
-        String query = "SELECT * FROM user WHERE username = ? AND password = ?";
-
-        // 2. Inizializza le risorse
-        Connection connection = null;
+        Connection conn = null;
         PreparedStatement stmt = null;
-        ResultSet resultSet = null;
-        User user = null; // La dichiariamo qui per poterla ritornare alla fine
+        ResultSet rs = null;
+        User user = null;
 
         try {
-            connection = DBConnect.getConnection();
-            stmt = connection.prepareStatement(query);
-
-            // 3. Imposta i parametri
+            conn = DBConnect.getConnection();
+            stmt = conn.prepareStatement(query);
             stmt.setString(1, username);
             stmt.setString(2, password);
 
-            // 4. ESEGUI
-            resultSet = stmt.executeQuery();
+            rs = stmt.executeQuery();
 
-            // 5. Controlliamo se c'è un risultato
-            if (resultSet.next()) {
-                // Leggiamo il ruolo per capire CHI stiamo creando
-                String role = resultSet.getString("role");
+            if (rs.next()) {
+                // --- A. RECUPERO DATI COMUNI (Tabella USER) ---
+                int id = rs.getInt("id");
+                String dbUsername = rs.getString("username");
+                String dbPassword = rs.getString("password"); // Utile se vuoi ricontrollarla
+                String nome = rs.getString("name");
+                String cognome = rs.getString("cognome");
+                String email = rs.getString("email");
 
-                // Dati comuni a tutti
-                int id = resultSet.getInt("id");
-                String nome = resultSet.getString("nome");
-                String cognome = resultSet.getString("cognome"); // o 'name' e 'email' come nel diagramma
-                String email = resultSet.getString("email");
-                // LOGICA DI "FABBRICAZIONE" (Factory Logic)
-                if ("ATHLETE".equals(role)) {
-                    // Recuperiamo dati specifici atleta (gestisci i null se necessario)
-                    float weight = resultSet.getFloat("weight");
-                    float height = resultSet.getFloat("height");
+                // --- B. IDENTIFICAZIONE DEL RUOLO ---
+                // Controllo se esiste un codice certificazione (TRAINER) o un peso (ATHLETE)
 
-                    // Istanziamo la classe CONCRETA
-                    user = new Athlete(id, username, password, nome, email, cognome, weight, height);
+                String certCode = rs.getString("cert_code");
 
-                } else if ("TRAINER".equals(role)) {
-                    String certCode = resultSet.getString("certificationCode");
+                Object weightObj = rs.getObject("weight");
 
-                    // Istanziamo la classe CONCRETA
-                    user = new PersonalTrainer(id, username, password, nome, cognome, email, certCode);
+                if (certCode != null) {
+                    // === È UN PERSONAL TRAINER ===
+
+                    user = new PersonalTrainer(id, dbUsername, dbPassword, nome, cognome, email, certCode);
+
+                } else if (weightObj != null) {
+                    // === È UN ATLETA ===
+                    float weight = rs.getFloat("weight");
+                    float height = rs.getFloat("height");
+                    int age = rs.getInt("age");
+
+                    // Ordine costruttore (dal tuo screenshot): id, user, pass, name, email, cognome, weight, height
+                    // ATTENZIONE: Nel tuo screenshot Athlete ha 'email' prima di 'cognome'!
+                    user = new Athlete(id, dbUsername, dbPassword, nome, age, email, cognome, weight, height);
+
                 }
             }
 
+        } catch (SQLException e) {
+            // Log dell'errore
+            System.err.println("Errore nel findByUsername: " + e.getMessage());
+            throw e;
         } finally {
-            // Chiudi le risorse (o usa DAOUtils se l'hai fatta)
-            try {
-                if (resultSet != null) resultSet.close();
-                if (stmt != null) stmt.close();
-                // connection.close(); // Dipende se vuoi chiuderla qui
-            } catch (SQLException e) {
-                e.printStackTrace();
-            }
+            // Chiusura risorse pulita
+            DAOUtils.close(conn, stmt, rs);
         }
 
-        // 6. Ritorniamo l'oggetto (sarà null se login fallito, oppure un Athlete/Trainer)
         return user;
     }
 
-    public void saveAthlete(Athlete athlete) throws SQLException{
+
+    @Override
+    public void save(User user) throws SQLException{
+        if (user == null) {
+        throw new SQLException("impossibile salvare utente nullo");}
+        //controllo il tipo a runtime e smisto la chiamata
+        if(user instanceof Athlete){
+            //faccio il cast e chiamo il metodo corrispondente
+            saveAthlete((Athlete) user);
+        }else if(user instanceof PersonalTrainer){
+            //faccio il cast e chiamo il metodo corrispondente
+            saveTrainer((PersonalTrainer) user);
+        }else{//arrivati qua stiamo provando a salvare una classe sconosciuta
+            throw new SQLException("tipo di utente non supportato "+user.getClass().getName());
+            }
+        }
+
+    private void saveAthlete(Athlete athlete) throws SQLException{
         // Corrisponde ai campi in User.java
         String userQuery = "INSERT INTO user (username, password, name, cognome, email) VALUES (?, ?, ?, ?, ?)";
         // Il primo '?' è la Foreign Key (l'ID generato dalla userQuery)
@@ -123,7 +147,7 @@ public class MySQLUserDAO {
 
     }
 
-    public void saveTrainer(PersonalTrainer trainer) throws SQLException {
+    private void saveTrainer(PersonalTrainer trainer) throws SQLException {
         String userQuery = "INSERT INTO user (username, password, name, cognome, email) VALUES (?, ?, ?, ?, ?)";
         String trainerQuery = "INSERT INTO personal_trainer (user_id, cert_code) VALUES (?, ?)";
 
