@@ -10,10 +10,12 @@ import java.sql.SQLException;
 
 public class LoginController implements Controller {
 
-    private UserDAO userDAO;
+    private UserDAO userDAO;// interfaccia per parlare col db
+    private LoginView view; //interfaccia per parlare con la grafica
 
-    public LoginController() {
+    public LoginController(LoginView view) {
         this.userDAO = new MySQLUserDAO();
+        this.view = view;
     }
 
     public void checkLogin(UserBean credentials) throws LoginException {

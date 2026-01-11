@@ -35,27 +35,58 @@ public void start(Stage primaryStage){
     loadLogin();
     this.mainStage.show();
 }
+
 //METODI DI NAVIGAZIONE
 public void loadLogin(){
+    try{if(currentController!=null){
+
+        currentController.dispose();}
+        //carico FXML
+        FXMLLoader loader = new FXMLLoader(getClass().getResource("/com/example/mygymbro/view/schermataLogin.fxml"));
+        Parent root = loader.load();
+
+        //recupero view grafica
+        LoginView view = loader.getController();
+        //creao un controller applicativo
+        //istanzio il controller applicativo del login
+        LoginController controller = new LoginController(view);
+        view.setListener(controller);
+        //update controller
+        this.currentController = controller;
+    //show
+    mainStage.setTitle("MyGymBro - Login");
+    mainStage.setScene(new Scene(root));
+    mainStage.show();
+
+}catch(IOException e){e.printStackTrace();}
+
+}
+
+
+public void loadHome(){
 try{if(currentController!=null){
-
-   currentController.dispose();}
-    //carico FXML
-    FXMLLoader loader = new FXMLLoader(getClass().getResource("/com/example/mygymbro/view/home.fxml"));
+    currentController.dispose();
+}//carico fxml
+    FXMLLoader loader = new FXMLLoader(getClass().getResource("/com/example/mygymbro/view/mainpage.fxml"));
     Parent root = loader.load();
-
-    //recupero view grafica
+    //recupero la view grafica dell atleta
     AthleteView view = loader.getController();
-    //creao un controller applicativo
-    //istanzio il navigation controler
-    NavigationController controler = new NavigationController();
-    //update controller
+    //creao un controller applicativo per la mia home che è rappresentata da "AthleteView"
+    //ha come controller applicativo il "navigationController"
+    NavigationController controller = new NavigationController(view);
+    //wiring
+    view.setListener(controller);
     this.currentController = controller;
+
     //show
     mainStage.setTitle("MyGymBro - Home");
     mainStage.setScene(new Scene(root));
+    mainStage.show();
+        }catch(IOException e){e.printStackTrace();}
+}
 
-}catch(IOException e){e.printStackTrace();}
+
+public void loadWorkoutBuilder(){
 
 }
 
@@ -66,7 +97,6 @@ try{if(currentController!=null){
         loadLogin();
     }
 
-public void loadHome(){}
-public void loadWorkoutBuilder(){}
+public void dispose() {}
 
-public void dispose(){}
+}
