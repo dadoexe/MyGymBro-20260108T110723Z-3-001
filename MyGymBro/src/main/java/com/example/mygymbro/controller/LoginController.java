@@ -4,6 +4,7 @@ import com.example.mygymbro.bean.UserBean;
 import com.example.mygymbro.dao.MySQLUserDAO;
 import com.example.mygymbro.dao.UserDAO;
 import com.example.mygymbro.model.User;
+import com.example.mygymbro.view.LoginView;
 
 import javax.security.auth.login.LoginException;
 import java.sql.SQLException;
