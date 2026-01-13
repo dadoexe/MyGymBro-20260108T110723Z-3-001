@@ -1,10 +1,8 @@
 package com.example.mygymbro.controller;
 
 import com.example.mygymbro.bean.WorkoutPlanBean;
-import com.example.mygymbro.dao.ExerciseDAO;
-import com.example.mygymbro.dao.MySQLExerciseDAO;
-import com.example.mygymbro.dao.WorkoutPlanDAO;
-import com.example.mygymbro.dao.MySQLWorkoutPlanDAO;
+import com.example.mygymbro.dao.*;
+import com.example.mygymbro.model.Exercise;
 import com.example.mygymbro.view.WorkoutBuilderView;
 
 import java.util.List;
@@ -22,7 +20,7 @@ public class PlanManagerController implements Controller {
 
         // 1. Inizializzo i DAO (sempre)
         this.workoutPlanDAO = new MySQLWorkoutPlanDAO();
-        this.exerciseDAO = new MySQLExerciseDAO();
+        this.exerciseDAO = new RestApiExerciseDAO();
 
         // 2. Creo un Bean VUOTO (perché è un nuovo piano)
         this.currentPlan = new WorkoutPlanBean();
@@ -37,7 +35,7 @@ public class PlanManagerController implements Controller {
 
         // 1. Inizializzo i DAO
         this.workoutPlanDAO = new MySQLWorkoutPlanDAO();
-        this.exerciseDAO = new MySQLExerciseDAO();
+        this.exerciseDAO = new RestApiExerciseDAO();
 
         // 2. Uso il Bean PASSATO (perché stiamo modificando)
         this.currentPlan = planToEdit;
@@ -64,6 +62,13 @@ public class PlanManagerController implements Controller {
     }
 
     // ... metodi handleAddExercise, handleSavePlan, dispose ...
+
+    public void hanldeAddExercise(Exercise exercise) {
+    }
+
+    public void handleSavePlan(WorkoutPlanBean workoutPlanBean) {
+
+    }
 
     @Override
     public void dispose() {

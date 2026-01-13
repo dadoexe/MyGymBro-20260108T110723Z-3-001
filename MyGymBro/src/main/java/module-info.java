@@ -3,6 +3,8 @@ module com.example.mygymbro {
     requires javafx.fxml;
     requires java.sql;
     requires java.desktop;
+    requires java.net.http; // Per fare chiamate API REST
+    requires com.google.gson; // Per usare la libreria Gson
 
     opens com.example.mygymbro to javafx.fxml;
     exports com.example.mygymbro;
@@ -15,5 +17,6 @@ module com.example.mygymbro {
     exports com.example.mygymbro.controller;
     opens com.example.mygymbro.controller to javafx.fxml;
     exports com.example.mygymbro.bean;
-    opens com.example.mygymbro.bean to javafx.fxml;
+    opens com.example.mygymbro.bean to com.google.gson;
+
 }

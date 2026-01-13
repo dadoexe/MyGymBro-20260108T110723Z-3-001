@@ -2,17 +2,18 @@ package com.example.mygymbro.bean;
 
 public class ExerciseBean {
 
-    private int id;
+    private String id;
     private String name;
     private String description;
     private String muscleGroup; // Usiamo String per facilitare la visualizzazione nella View
+    private String gifUrl;
 
     public ExerciseBean() {
         // Costruttore vuoto obbligatorio
     }
 
     // Costruttore di utilità
-    public ExerciseBean(int id, String name, String description, String muscleGroup) {
+    public ExerciseBean(String id, String name, String description, String muscleGroup) {
         this.id = id;
         this.name = name;
         this.description = description;
@@ -20,6 +21,9 @@ public class ExerciseBean {
     }
 
     // --- Getter e Setter ---
+    public String getGifUrl() { return gifUrl; }
+    public void setGifUrl(String gifUrl) { this.gifUrl = gifUrl; }
+
     public int getId() { return id; }
     public void setId(int id) { this.id = id; }
 
