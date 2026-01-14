@@ -10,6 +10,9 @@ public class Athlete extends User {
 
     private List<WorkoutPlan> pianiUtente = new ArrayList<>();
 
+    public Athlete(){
+        super();
+    }
     public Athlete(int id, String username, String password, String name, int age, String email, String cognome, float weight, float height) {
         super(id, username, password, name,cognome, email); // Passa i dati comuni al padre
         this.weight = weight;

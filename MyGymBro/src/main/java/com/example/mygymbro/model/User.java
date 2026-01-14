@@ -1,6 +1,6 @@
 package com.example.mygymbro.model;
 
-public abstract class User { // <--- ABSTRACT!
+public class User { // <--- ABSTRACT!
     private int id;
     private String username;
     private String password;
@@ -9,6 +9,9 @@ public abstract class User { // <--- ABSTRACT!
     private String email; // Nel diagramma c'è email, non cognome
 
     // Costruttore per le sottoclassi
+    public User() {
+    }
+
     public User(int id, String username, String password, String name, String cognome, String email) {
         this.id = id;
         this.username = username;
@@ -32,6 +35,9 @@ public abstract class User { // <--- ABSTRACT!
 
     public String getName() {
         return name;
+    }
+    public void setNome(String name) {
+        this.name = name;
     }
 
     public String getCognome() {

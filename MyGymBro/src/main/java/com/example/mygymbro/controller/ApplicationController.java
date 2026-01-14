@@ -1,8 +1,8 @@
 package com.example.mygymbro.controller;
 
-import com.example.mygymbro.view.LoginView;
-import com.example.mygymbro.view.AthleteView;
-import com.example.mygymbro.view.WorkoutBuilderView;
+import com.example.mygymbro.views.LoginView;
+import com.example.mygymbro.views.AthleteView;
+import com.example.mygymbro.views.WorkoutBuilderView;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
@@ -13,7 +13,7 @@ public final class ApplicationController implements Controller {//singleton
 
     //static variable reference of istance
     private static ApplicationController instance = null;
-
+    boolean isGraphicMode = true; // O false se lanci da terminale
     //private contructor restricted to this class
     private ApplicationController() {
     }
@@ -42,56 +42,72 @@ public final class ApplicationController implements Controller {//singleton
     public void loadLogin() {
         try {
             if (currentController != null) {
-
                 currentController.dispose();
             }
-            //carico FXML
-            FXMLLoader loader = new FXMLLoader(getClass().getResource("/com/example/mygymbro/view/schermataLogin.fxml"));
-            Parent root = loader.load();
 
-            //recupero view grafica
-            LoginView view = loader.getController();
-            //creao un controller applicativo
-            //istanzio il controller applicativo del login
+            LoginView view = null;
+
+            if (isGraphicMode) {
+                // --- MODALITÀ GRAFICA (JavaFX) ---
+                FXMLLoader loader = new FXMLLoader(getClass().getResource("/com/example/mygymbro/view/view/schermataLogin.fxml"));
+                Parent root = loader.load();
+                view = loader.getController(); // Restituisce GraphicLoginView (che implementa LoginView)
+
+                // Impostiamo la scena
+                mainStage.setTitle("MyGymBro - Login");
+                mainStage.setScene(new Scene(root));
+                mainStage.show();
+            } /*else {
+                // --- MODALITÀ CLI (Console) ---
+                view = new CliLoginView(); // Restituisce CliLoginView (che implementa LoginView)
+                // (Opzionale) Se la CLI ha bisogno di pulire lo schermo o stampare un header iniziale
+                // ((CliLoginView) view).init();
+            }*/
+
+            // --- COMUNE A ENTRAMBI ---
+            // Il LoginController accetta l'interfaccia 'LoginView', quindi funziona con entrambe
             LoginController controller = new LoginController(view);
             view.setListener(controller);
-            //update controller
+
             this.currentController = controller;
-            //show
-            mainStage.setTitle("MyGymBro - Login");
-            mainStage.setScene(new Scene(root));
-            mainStage.show();
 
         } catch (IOException e) {
             e.printStackTrace();
         }
-
     }
 
 
     public void loadHome() {
-        try {
-            if (currentController != null) {
-                currentController.dispose();
-            }//carico fxml
-            FXMLLoader loader = new FXMLLoader(getClass().getResource("/com/example/mygymbro/view/mainpage.fxml"));
-            Parent root = loader.load();
-            //recupero la view grafica dell atleta
-            AthleteView view = loader.getController();
-            //creao un controller applicativo per la mia home che è rappresentata da "AthleteView"
-            //ha come controller applicativo il "navigationController"
-            NavigationController controller = new NavigationController(view);
-            //wiring
-            view.setListener(controller);
-            this.currentController = controller;
+        // Ipotizziamo di avere un flag impostato all'avvio dell'app
 
-            //show
-            mainStage.setTitle("MyGymBro - Home");
-            mainStage.setScene(new Scene(root));
-            mainStage.show();
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
+
+        AthleteView view = null;
+
+        if (isGraphicMode) {
+            // --- STRADA GUI (Quella che hai ora) ---
+            try {
+                FXMLLoader loader = new FXMLLoader(getClass().getResource("/com/example/mygymbro/view/view/mainpage.fxml"));
+                Parent root = loader.load();
+                view = loader.getController(); // Torna GraphicAthleteView
+
+                mainStage.setScene(new Scene(root));
+                mainStage.show();
+            } catch (IOException e) { e.printStackTrace(); }
+
+        }/* else {
+            // --- STRADA CLI (Nuova) ---
+            // Qui NON usi FXMLLoader, istanzi semplicemente la classe
+            view = new CliAthleteView();
+            // Nota: La CLI non ha uno "Stage" o una "Scene", vive nella console
+            ((CliAthleteView) view).start(); // Metodo ipotetico per avviare il loop della CLI
+        }*/
+
+        // --- DA QUI IN POI È UGUALE PER TUTTI ---
+        // Il Controller non sa se 'view' è Graphic o Cli, e non gliene frega niente!
+        NavigationController controller = new NavigationController(view);
+        assert view != null;
+        view.setListener(controller);
+        controller.loadDashboardData(); // Riempie la view (qualunque essa sia)
     }
 
 
@@ -100,16 +116,29 @@ public final class ApplicationController implements Controller {//singleton
             if (currentController != null) {
                 currentController.dispose();
             }
-            FXMLLoader loader = new FXMLLoader(getClass().getResource("/com/example/mygymbro/view/workoutBuilder.fxml"));
-            Parent root = loader.load();
-            WorkoutBuilderView view = loader.getController();
+
+            WorkoutBuilderView view = null;
+
+            if (isGraphicMode) {
+                // --- MODALITÀ GRAFICA ---
+                FXMLLoader loader = new FXMLLoader(getClass().getResource("/com/example/mygymbro/view/workoutBuilder.fxml"));
+                Parent root = loader.load();
+                view = loader.getController(); // Restituisce GraphicWorkoutBuilderView
+
+                mainStage.setTitle("MyGymBro - WorkoutBuilder");
+                mainStage.setScene(new Scene(root));
+                mainStage.show();
+            } /*else {
+                // --- MODALITÀ CLI ---
+                view = new CliWorkoutBuilderView(); // La tua classe che gestisce System.out/in per creare schede
+            }*/
+
+            // --- COMUNE ---
+            // PlanManagerController gestisce la logica indipendentemente dalla vista
             PlanManagerController controller = new PlanManagerController(view);
             view.setListener(controller);
-            this.currentController = controller;
-            mainStage.setTitle("MyGymBro - WorkoutBuilder");
-            mainStage.setScene(new Scene(root));
-            mainStage.show();
 
+            this.currentController = controller;
 
         } catch (Exception e) {
             e.printStackTrace();
@@ -139,6 +168,6 @@ public final class ApplicationController implements Controller {//singleton
             mainStage.close();
         }
 
-        // 4. (Opzionale) System.exit(0) se vuoi essere sicuro di uccidere tutto
+        System.exit(0);
     }
 }

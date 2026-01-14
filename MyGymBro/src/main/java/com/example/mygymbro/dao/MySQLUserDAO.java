@@ -11,14 +11,13 @@ public class MySQLUserDAO implements UserDAO {
 
 
     @Override
-    public User findByUsername(String username) throws SQLException {
-        // 1. QUERY UNIFICATA (LEFT JOIN)
-        // Recuperiamo tutto in una volta: Dati Utente + Dati Atleta + Dati Trainer.
-        // Se l'utente non è un atleta, le colonne di 'athlete' (a.weight, etc.) saranno NULL.
-        String query = "SELECT u.*, a.weight, a.height, a.age, t.cert_code " +
+    public User findByUsername(String username) {
+        // 1. QUERY SEMPLIFICATA
+        // Prendo i dati utente e, se ci sono, i dati fisici.
+        // Niente più personal_trainer!
+        String query = "SELECT u.*, a.weight, a.height, a.age " +
                 "FROM user u " +
                 "LEFT JOIN athlete a ON u.id = a.user_id " +
-                "LEFT JOIN personal_trainer t ON u.id = t.user_id " +
                 "WHERE u.username = ?";
 
         Connection conn = null;
@@ -31,47 +30,31 @@ public class MySQLUserDAO implements UserDAO {
             stmt = conn.prepareStatement(query);
             stmt.setString(1, username);
 
-
             rs = stmt.executeQuery();
 
             if (rs.next()) {
-                // --- A. RECUPERO DATI COMUNI (Tabella USER) ---
+                // --- A. RECUPERO DATI BASE ---
                 int id = rs.getInt("id");
                 String dbUsername = rs.getString("username");
-                String dbPassword = rs.getString("password"); // Utile se vuoi ricontrollarla
-                String nome = rs.getString("name");
+                String dbPassword = rs.getString("password");
+                String nome = rs.getString("nome");     // Occhio se nel DB è 'name' o 'nome'
                 String cognome = rs.getString("cognome");
                 String email = rs.getString("email");
 
-                // --- B. IDENTIFICAZIONE DEL RUOLO ---
-                // Controllo se esiste un codice certificazione (TRAINER) o un peso (ATHLETE)
+                // --- B. RECUPERO DATI ATLETA ---
+                // Usiamo dei default (es. 0) se l'utente non ha ancora compilato il peso
+                float weight = rs.getFloat("weight"); // Restituisce 0.0 se null
+                float height = rs.getFloat("height");
+                int age = rs.getInt("age");
 
-                String certCode = rs.getString("cert_code");
-
-                Object weightObj = rs.getObject("weight");
-
-                if (certCode != null) {
-                    // === È UN PERSONAL TRAINER ===
-
-                    user = new PersonalTrainer(id, dbUsername, dbPassword, nome, cognome, email, certCode);
-
-                } else if (weightObj != null) {
-                    // === È UN ATLETA ===
-                    float weight = rs.getFloat("weight");
-                    float height = rs.getFloat("height");
-                    int age = rs.getInt("age");
-
-                    // Ordine costruttore (dal tuo screenshot): id, user, pass, name, email, cognome, weight, height
-                    // ATTENZIONE: Nel tuo screenshot Athlete ha 'email' prima di 'cognome'!
-                    user = new Athlete(id, dbUsername, dbPassword, nome, age, email, cognome, weight, height);
-
-                }
+                // --- C. CREAZIONE DIRETTA DELL'ATLETA ---
+                // Non ci chiediamo più "chi è?". È per forza un Atleta!
+                user = new Athlete(id, dbUsername, dbPassword, nome, age, email, cognome, weight, height);
             }
 
         } catch (SQLException e) {
-            // Log dell'errore
             System.err.println("Errore nel findByUsername: " + e.getMessage());
-            throw e;
+            e.printStackTrace();
         } finally {
             // Chiusura risorse pulita
             DAOUtils.close(conn, stmt, rs);
