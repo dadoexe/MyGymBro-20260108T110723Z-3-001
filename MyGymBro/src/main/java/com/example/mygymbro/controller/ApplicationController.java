@@ -121,7 +121,7 @@ public final class ApplicationController implements Controller {//singleton
 
             if (isGraphicMode) {
                 // --- MODALITÀ GRAFICA ---
-                FXMLLoader loader = new FXMLLoader(getClass().getResource("/com/example/mygymbro/view/workoutBuilder.fxml"));
+                FXMLLoader loader = new FXMLLoader(getClass().getResource("/com/example/mygymbro/view/view/workout_builder.fxml"));
                 Parent root = loader.load();
                 view = loader.getController(); // Restituisce GraphicWorkoutBuilderView
 

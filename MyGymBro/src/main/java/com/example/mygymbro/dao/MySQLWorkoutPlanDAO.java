@@ -14,7 +14,7 @@ public class MySQLWorkoutPlanDAO implements WorkoutPlanDAO {
     public void save(WorkoutPlan workoutPlan) throws SQLException {
 
         //scrivo la query
-        String planQuery = "INSERT INTO workout_plan (name, comment, creationDate, athlete_id) VALUES (?, ?, ?, ?)";
+        String planQuery = "INSERT INTO workout_plan (name, comment, creation_date, athlete_id) VALUES (?, ?, ?, ?)";
         String exerciseQuery = "INSERT INTO workout_exercise (workout_plan_id, exercise_id, sets, reps, rest_time) VALUES (?, ?, ?, ?, ?)";
         //dichiaro le risorse
         Connection conn = null;
@@ -51,14 +51,16 @@ public class MySQLWorkoutPlanDAO implements WorkoutPlanDAO {
             //usiamo l'id appena recuperato (newPlanId)
             stmtExercise = conn.prepareStatement(exerciseQuery);
             for(WorkoutExercise ex : workoutPlan.getExercises()){
-                //int localExerciseId = getOrInsertExercise(we.getExerciseDefinition(), conn);
+                int localExerciseId = getOrInsertExercise(ex.getExerciseDefinition(), conn);
                 stmtExercise.setInt(1, newPlanId);
-                stmtExercise.setInt(2, ex.getExerciseDefinition().getId());
+                stmtExercise.setInt(2, localExerciseId);
                 stmtExercise.setInt(3,ex.getSets());
                 stmtExercise.setInt(4, ex.getReps());
                 stmtExercise.setInt(5, ex.getRestTime());
-                stmtExercise.executeUpdate();
+                //stmtExercise.executeUpdate();
+                stmtExercise.addBatch();
             }
+            stmtExercise.executeBatch(); // Eseguiamo tutti gli inserimenti insieme
             conn.commit();
 
         } catch (SQLException e) {
@@ -79,6 +81,39 @@ public class MySQLWorkoutPlanDAO implements WorkoutPlanDAO {
                 //infine chiudiamo la connesione
             DAOUtils.closeConnection(conn);
         }
+    }
+
+    private int getOrInsertExercise(Exercise ex, Connection conn) throws SQLException {
+        // 1. Cerca se esiste già
+        String searchSQL = "SELECT id FROM exercise WHERE name = ?";
+        try (PreparedStatement stmt = conn.prepareStatement(searchSQL)) {
+            stmt.setString(1, ex.getName());
+            try (ResultSet rs = stmt.executeQuery()) {
+                if (rs.next()) {
+                    return rs.getInt("id"); // Trovato! Ritorniamo il suo ID locale.
+                }
+            }
+        }
+
+        // 2. Se siamo qui, non esiste. Creiamolo!
+        String insertSQL = "INSERT INTO exercise (name, description, muscle_group) VALUES (?, ?, ?)";
+        try (PreparedStatement stmt = conn.prepareStatement(insertSQL, Statement.RETURN_GENERATED_KEYS)) {
+            stmt.setString(1, ex.getName());
+            stmt.setString(2, ex.getDescription());
+            // Gestione sicura dell'enum (se nullo, mettiamo un default)
+            String muscle = (ex.getMuscleGroup() != null) ? ex.getMuscleGroup().name() : "CHEST";
+            stmt.setString(3, muscle);
+
+            stmt.executeUpdate();
+
+            try (ResultSet rs = stmt.getGeneratedKeys()) {
+                if (rs.next()) {
+                    return rs.getInt(1); // Ritorniamo il nuovo ID appena generato.
+                }
+            }
+        }
+
+        throw new SQLException("Impossibile salvare l'esercizio locale: " + ex.getName());
     }
 
 

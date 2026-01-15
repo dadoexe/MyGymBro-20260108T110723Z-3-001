@@ -49,6 +49,7 @@
             <padding>
                 <Insets bottom="15.0" top="15.0" />
             </padding>
+            <Button fx:id="btnCreatePlan" text="+ Nuova Scheda" onAction="#handleCreatePlan" />
             <Button mnemonicParsing="false" text="Logout" />
         </VBox>
     </bottom>

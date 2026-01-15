@@ -12,9 +12,10 @@ public interface WorkoutBuilderView {
 
      ExerciseBean getSelectedExercise();
 
-     int getSets();
+     String getSets();
 
-     int getRepetitions();
+     String getReps();
+
 
      void setListener(PlanManagerController controller);
 
@@ -24,4 +25,6 @@ public interface WorkoutBuilderView {
 
      void updateExerciseTable(List<WorkoutExerciseBean> exercises);
      void showError(String message);
+
+    String getComment();
 }

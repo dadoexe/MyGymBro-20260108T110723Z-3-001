@@ -156,11 +156,19 @@ public class PlanManagerController implements Controller {
     // --- LOGICA DI SALVATAGGIO ---
 
     public void handleSavePlan() {
+
         try {
             // 1. Recupero i dati aggiornati dalla View (se necessario)
             // Se la view aggiorna direttamente 'currentPlan' (binding), questo step è automatico.
             // Altrimenti dovresti fare: currentPlan.setName(view.getPlanName()); etc.
+            currentPlan.setName(view.getPlanName());
+            currentPlan.setComment(view.getComment());
 
+            // Verifica di sicurezza (opzionale ma consigliata)
+            if (currentPlan.getName() == null || currentPlan.getName().trim().isEmpty()) {
+                view.showError("Devi dare un nome alla scheda!");
+                return;
+            }
             // 2. Converto BEAN -> MODEL
             WorkoutPlan planModel = toModelWorkoutPlan(currentPlan);
 
