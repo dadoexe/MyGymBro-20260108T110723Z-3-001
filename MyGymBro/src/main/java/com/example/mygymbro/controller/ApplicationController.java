@@ -1,5 +1,6 @@
 package com.example.mygymbro.controller;
 
+import com.example.mygymbro.bean.WorkoutPlanBean;
 import com.example.mygymbro.views.LoginView;
 import com.example.mygymbro.views.AthleteView;
 import com.example.mygymbro.views.WorkoutBuilderView;
@@ -111,7 +112,14 @@ public final class ApplicationController implements Controller {//singleton
     }
 
 
+    // --- VERSIONE 1: CREAZIONE NUOVA SCHEDA (Nessun argomento) ---
     public void loadWorkoutBuilder() {
+        // Chiama il metodo principale passando null, perché non c'è nessuna scheda da modificare
+        loadWorkoutBuilder(null);
+    }
+
+    // --- VERSIONE 2: MODIFICA O CREAZIONE (Logica Principale) ---
+    public void loadWorkoutBuilder(WorkoutPlanBean planToEdit) {
         try {
             if (currentController != null) {
                 currentController.dispose();
@@ -120,28 +128,45 @@ public final class ApplicationController implements Controller {//singleton
             WorkoutBuilderView view = null;
 
             if (isGraphicMode) {
-                // --- MODALITÀ GRAFICA ---
+                // --- MODALITÀ GRAFICA (GUI) ---
+                // Nota: Controlla bene che il path sia corretto! (una sola cartella 'view' o due?)
                 FXMLLoader loader = new FXMLLoader(getClass().getResource("/com/example/mygymbro/view/view/workout_builder.fxml"));
                 Parent root = loader.load();
                 view = loader.getController(); // Restituisce GraphicWorkoutBuilderView
 
-                mainStage.setTitle("MyGymBro - WorkoutBuilder");
+                // Cambiamo dinamicamente il titolo della finestra
+                String title = (planToEdit == null) ? "MyGymBro - Nuova Scheda" : "MyGymBro - Modifica Scheda";
+                mainStage.setTitle(title);
                 mainStage.setScene(new Scene(root));
                 mainStage.show();
-            } /*else {
-                // --- MODALITÀ CLI ---
-                view = new CliWorkoutBuilderView(); // La tua classe che gestisce System.out/in per creare schede
-            }*/
 
-            // --- COMUNE ---
-            // PlanManagerController gestisce la logica indipendentemente dalla vista
-            PlanManagerController controller = new PlanManagerController(view);
+            } else {
+                // --- MODALITÀ CLI (Command Line) ---
+                // Qui useresti la Factory o il costruttore diretto della CLI
+                // view = new CliWorkoutBuilderView();
+            }
+
+            // --- GESTIONE DEL CONTROLLER (Logica Comune) ---
+            PlanManagerController controller;
+
+            if (planToEdit == null) {
+                // CASO A: NUOVA SCHEDA -> Usiamo il costruttore base
+                controller = new PlanManagerController(view);
+            } else {
+                // CASO B: MODIFICA -> Usiamo il costruttore che accetta il Bean
+                // Questo riempirà automaticamente i campi della vista (GUI o CLI) con i dati vecchi
+                controller = new PlanManagerController(view, planToEdit);
+            }
+
             view.setListener(controller);
-
             this.currentController = controller;
+
+            // Se fossimo in CLI, qui potremmo dover avviare il loop di input:
+            // if (!isGraphicMode) ((CliWorkoutBuilderView)view).start();
 
         } catch (Exception e) {
             e.printStackTrace();
+            System.err.println("Errore nel caricamento del WorkoutBuilder: " + e.getMessage());
         }
     }
 

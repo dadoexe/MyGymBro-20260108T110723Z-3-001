@@ -137,8 +137,10 @@ public class PlanManagerController implements Controller {
         athlete.setId(userBean.getId());
 
         // Creo il Model del piano
+        int idToUse = bean.getId();
+
         WorkoutPlan plan = new WorkoutPlan(
-                0, // ID 0 perché è nuovo (o verrà sovrascritto se update)
+                idToUse, // <--- PRIMA C'ERA SCRITTO 0
                 bean.getName(),
                 bean.getComment(),
                 new Date(),

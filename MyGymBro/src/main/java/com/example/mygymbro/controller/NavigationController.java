@@ -79,6 +79,29 @@ public class NavigationController implements Controller {
         this.workoutPlanDAO = null;
         this.currentUser = null;
     }
+    // --- METODI AGGIUNTI PER GESTIRE I BOTTONI ---
+
+    public void handleDeletePlan(WorkoutPlanBean planBean) {
+        try {
+            // 1. Il Controller ha il DAO, quindi PUÒ cancellare!
+            workoutPlanDAO.delete(planBean.getId());
+
+            // 2. Aggiorna la vista ricaricando i dati
+            loadDashboardData();
+
+            System.out.println("Scheda eliminata: " + planBean.getName());
+
+        } catch (SQLException e) {
+            e.printStackTrace();
+            System.err.println("Errore cancellazione: " + e.getMessage());
+        }
+    }
+
+    public void handleEditPlan(WorkoutPlanBean planBean) {
+        // 1. Chiede all'ApplicationController di cambiare scena
+        // e gli passa il bean da modificare
+        ApplicationController.getInstance().loadWorkoutBuilder(planBean);
+    }
 
     /**
      * Metodo helper per convertire la lista di Model (dal DB) in lista di Bean (per la View)

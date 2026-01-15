@@ -25,6 +25,9 @@ public class WorkoutPlan {
 
         exercises.add(ex);
     }
+    public int getAthleteId() {
+        return athlete.getId();
+    }
 
     public void setId(int id) {
         this.id = id;

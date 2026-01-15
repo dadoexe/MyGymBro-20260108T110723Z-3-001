@@ -74,29 +74,6 @@ public class GraphicAthleteView implements AthleteView {
     }
 
     @Override
-    public void showWorkoutPlans(List<WorkoutPlanBean> plans) {
-        if (listWorkouts == null) return;
-
-        listWorkouts.getItems().clear();
-
-        // Se la lista è vuota, mostriamo il messaggio di avviso
-        if (plans.isEmpty()) {
-            showNoPlansMessage();
-            return;
-        }
-
-        // Se ci sono schede, nascondiamo l'avviso e popoliamo la lista
-        if (lblInfo != null) lblInfo.setVisible(false);
-
-        for (WorkoutPlanBean plan : plans) {
-            // Formattiamo la stringa da mostrare nella lista
-            // Es: "Forza (2023-10-15)"
-            String displayString = plan.getName() + " (" + plan.getCreationDate() + ")";
-            listWorkouts.getItems().add(displayString);
-        }
-    }
-
-    @Override
     public void showNoPlansMessage() {
         if (listWorkouts != null) listWorkouts.getItems().clear();
 
@@ -122,6 +99,72 @@ public class GraphicAthleteView implements AthleteView {
         alert.setContentText(message);
         alert.showAndWait();
     }
+
+
+    // Aggiungi una lista locale per tenere traccia dei dati veri
+    private List<WorkoutPlanBean> localCache;
+
+    @Override
+    public void showWorkoutPlans(List<WorkoutPlanBean> plans) {
+        this.localCache = plans; // Ci salviamo i dati veri in memoria
+
+        if (listWorkouts == null) return;
+        listWorkouts.getItems().clear();
+
+        if (plans.isEmpty()) {
+            showNoPlansMessage();
+            return;
+        }
+
+        if (lblInfo != null) lblInfo.setVisible(false);
+
+        for (WorkoutPlanBean plan : plans) {
+            String displayString = plan.getName() + " (" + plan.getCreationDate() + ")";
+            listWorkouts.getItems().add(displayString);
+        }
+    }
+
+    @FXML
+    public void handleDeletePlan() {
+        // 1. Prendo l'elemento selezionato dalla grafica
+        int selectedIndex = listWorkouts.getSelectionModel().getSelectedIndex();
+
+        // Controllo se ho una lista locale di bean (localCache) popolata in showWorkoutPlans
+        if (selectedIndex >= 0 && localCache != null && selectedIndex < localCache.size()) {
+            WorkoutPlanBean selectedPlan = localCache.get(selectedIndex);
+
+            // 2. Chiamo il CONTROLLER (Listener)
+            if (listener != null) {
+                listener.handleDeletePlan(selectedPlan);
+            }
+        } else {
+            showError("Seleziona una scheda da eliminare!");
+        }
+    }
+
+    @FXML
+    public void handleEditPlan() {
+        int selectedIndex = listWorkouts.getSelectionModel().getSelectedIndex();
+
+        if (selectedIndex >= 0 && localCache != null && selectedIndex < localCache.size()) {
+            WorkoutPlanBean selectedPlan = localCache.get(selectedIndex);
+
+            // 2. Chiamo il CONTROLLER
+            if (listener != null) {
+                listener.handleEditPlan(selectedPlan);
+            }
+        } else {
+            showError("Seleziona una scheda da modificare!");
+        }
+    }
+
+    public void showError(String msg) {
+        Alert alert = new Alert(Alert.AlertType.WARNING); // Warning è giallo, meglio per errori utente
+        alert.setContentText(msg);
+        alert.showAndWait();
+    }
+
+
 
     // Metodo richiesto dall'interfaccia View (se presente nella tua gerarchia)
     @Override
