@@ -37,8 +37,8 @@ public class MySQLWorkoutPlanDAO implements WorkoutPlanDAO {
             //aggiungo l'id DELL'ATLETA per associarlo al corrispettivo piano
             stmtPlan.setInt(4, workoutPlan.getAthlete().getId());
 
-            stmtPlan.executeUpdate();
-
+            int affectedRows = stmtPlan.executeUpdate();
+            if (affectedRows == 0) throw new SQLException("Creazione scheda fallita, nessuna riga aggiunta.");
             //recupero id generato
             generatedKeys = stmtPlan.getGeneratedKeys();
             int newPlanId = -1;
@@ -51,6 +51,7 @@ public class MySQLWorkoutPlanDAO implements WorkoutPlanDAO {
             //usiamo l'id appena recuperato (newPlanId)
             stmtExercise = conn.prepareStatement(exerciseQuery);
             for(WorkoutExercise ex : workoutPlan.getExercises()){
+                //int localExerciseId = getOrInsertExercise(we.getExerciseDefinition(), conn);
                 stmtExercise.setInt(1, newPlanId);
                 stmtExercise.setInt(2, ex.getExerciseDefinition().getId());
                 stmtExercise.setInt(3,ex.getSets());
