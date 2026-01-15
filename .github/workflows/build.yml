@@ -36,4 +36,4 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
-        run: mvn -B verify org.sonarsource.scanner.maven:sonar-maven-plugin:sonar -Dsonar.projectKey=dadoexe_MyGymBro-20260108T110723Z-3-001
+        run: mvn -B verify org.sonarsource.scanner.maven:sonar-maven-plugin:sonar -f MyGymBro/pom.xml -Dsonar.projectKey=dadoexe_MyGymBro-20260108T110723Z-3-001 -Dsonar.organization=dadoexe
