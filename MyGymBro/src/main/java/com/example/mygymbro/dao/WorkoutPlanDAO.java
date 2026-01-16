@@ -10,4 +10,5 @@ public interface WorkoutPlanDAO {
     void save(WorkoutPlan workoutPlan) throws SQLException;
     List<WorkoutPlan> findByAthlete(Athlete athlete) throws SQLException;
     void delete(int id) throws SQLException;
+    void update(WorkoutPlan plan) throws SQLException;
 }

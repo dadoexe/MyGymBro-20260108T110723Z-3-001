@@ -6,7 +6,7 @@ public class WorkoutExerciseBean {
     private int sets;
     private int reps;
     private int restTime;
-
+    private String muscleGroup;
     public WorkoutExerciseBean() {}
 
     public String getExerciseName() { return exerciseName; }
@@ -20,4 +20,6 @@ public class WorkoutExerciseBean {
 
     public int getRestTime() { return restTime; }
     public void setRestTime(int restTime) { this.restTime = restTime; }
+    public String getMuscleGroup() { return muscleGroup; }
+    public void setMuscleGroup(String muscleGroup) { this.muscleGroup = muscleGroup; }
 }

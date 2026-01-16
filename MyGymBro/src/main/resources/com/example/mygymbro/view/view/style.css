@@ -1,0 +1,133 @@
+/* --- SFONDO E TESTI GENERALI --- */
+.root {
+    -fx-background-color: #1E1E24;
+    -fx-font-family: "Segoe UI", sans-serif;
+}
+
+.label {
+    -fx-text-fill: white;
+}
+
+.header-label {
+    -fx-font-size: 24px;
+    -fx-font-weight: bold;
+    -fx-text-fill: #ffffff;
+    -fx-effect: dropshadow(three-pass-box, rgba(0,0,0,0.3), 5, 0, 0, 1);
+}
+
+/* --- CAMPI DI TESTO (TextField e TextArea) --- */
+.text-field, .text-area {
+    -fx-background-color: #2B2B36; /* Sfondo scuro per il box */
+    -fx-text-fill: white;          /* Testo bianco */
+    -fx-prompt-text-fill: #808080; /* Testo "suggerimento" grigio */
+    -fx-highlight-fill: #4CAF50;   /* Colore selezione testo */
+    -fx-highlight-text-fill: white;
+}
+
+/* Fix specifico per l'interno della TextArea che spesso rimane bianco */
+.text-area .content {
+    -fx-background-color: #2B2B36;
+    -fx-background-radius: 5;
+}
+
+.text-field:focused, .text-area:focused {
+    -fx-border-color: #4CAF50;
+    -fx-border-radius: 5;
+}
+
+/* --- COMBOBOX (Menu a tendina) - IL FIX CHE CERCAVI --- */
+.combo-box {
+    -fx-background-color: #2B2B36;
+    -fx-border-color: #444455;
+    -fx-border-radius: 5;
+}
+
+/* Colore del testo dentro la combobox chiusa */
+.combo-box .list-cell {
+    -fx-text-fill: white;
+    -fx-background-color: transparent;
+}
+
+/* Colore della freccetta */
+.combo-box .arrow, .combo-box .arrow-button {
+    -fx-background-color: white;
+}
+
+/* Il menu a tendina che si apre (Popup) */
+.combo-box-popup .list-view {
+    -fx-background-color: #2B2B36;
+    -fx-effect: dropshadow(three-pass-box, rgba(0,0,0,0.6), 8, 0.0, 0, 0);
+}
+
+/* Le righe dentro la tendina aperta */
+.combo-box-popup .list-cell {
+    -fx-text-fill: white;
+    -fx-background-color: transparent;
+    -fx-padding: 5 10 5 10;
+}
+
+/* Effetto hover quando passi il mouse su una voce */
+.combo-box-popup .list-cell:filled:selected,
+.combo-box-popup .list-cell:filled:hover {
+    -fx-background-color: #444455;
+    -fx-text-fill: #4CAF50; /* Testo verde quando selezionato */
+}
+
+/* --- TABELLA --- */
+.table-view {
+    -fx-background-color: transparent;
+    -fx-border-color: transparent;
+}
+.table-view .column-header-background {
+    -fx-background-color: #2B2B36;
+    -fx-background-radius: 5 5 0 0;
+}
+.table-view .column-header, .table-view .filler {
+    -fx-background-color: transparent;
+    -fx-size: 45px;
+}
+.table-view .column-header .label {
+    -fx-text-fill: #AAAAAA;
+    -fx-font-weight: bold;
+    -fx-alignment: center-left;
+}
+.table-row-cell {
+    -fx-background-color: #1E1E24;
+    -fx-border-color: #2B2B36;
+    -fx-border-width: 0 0 1 0;
+}
+.table-row-cell:odd {
+    -fx-background-color: #232329;
+}
+.table-row-cell:selected {
+    -fx-background-color: #383845;
+}
+.table-cell {
+    -fx-text-fill: white;
+    -fx-alignment: center-left;
+}
+
+/* --- BOTTONI --- */
+.button {
+    -fx-background-color: #444455;
+    -fx-text-fill: white;
+    -fx-background-radius: 5;
+    -fx-cursor: hand;
+    -fx-font-weight: bold;
+}
+.button:hover {
+    -fx-background-color: #555566;
+}
+.btn-success {
+    -fx-background-color: #4CAF50;
+    -fx-text-fill: white;
+}
+.btn-success:hover {
+    -fx-background-color: #45a049;
+}
+.btn-danger {
+    -fx-background-color: #FF5252;
+}
+.btn-danger:hover {
+    -fx-background-color: #ff3333;
+}

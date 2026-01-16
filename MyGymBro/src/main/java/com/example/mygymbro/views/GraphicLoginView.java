@@ -87,4 +87,14 @@ public class GraphicLoginView implements LoginView {
         if (txtUsername != null) txtUsername.clear();
         if (txtPassword != null) txtPassword.clear();
     }
+
+    @Override
+    public void close() {
+
+    }
+
+    @Override
+    public void showMessage() {
+
+    }
 }

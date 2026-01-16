@@ -211,6 +211,69 @@ public class MySQLWorkoutPlanDAO implements WorkoutPlanDAO {
         return exercises;
     }
 
+    @Override
+    public void update(WorkoutPlan plan) throws SQLException {
+        // Nomi tabelle al singolare
+        String updatePlanQuery = "UPDATE workout_plan SET name = ?, comment = ? WHERE id = ?";
+        String deleteExercisesQuery = "DELETE FROM workout_exercise WHERE workout_plan_id = ?";
+        String insertExerciseQuery = "INSERT INTO workout_exercise (workout_plan_id, exercise_id, sets, reps, rest_time) VALUES (?, ?, ?, ?, ?)";
+
+        Connection conn = null;
+        PreparedStatement psPlan = null;
+        PreparedStatement psDelete = null;
+        PreparedStatement psInsert = null;
+
+        try {
+            conn = DBConnect.getConnection();
+            conn.setAutoCommit(false); // Transazione ON
+
+            // 1. Aggiorna nome e descrizione della SCHEDA
+            psPlan = conn.prepareStatement(updatePlanQuery);
+            psPlan.setString(1, plan.getName());
+            psPlan.setString(2, plan.getComment());
+            psPlan.setInt(3, plan.getId());
+            psPlan.executeUpdate();
+
+            // 2. Rimuovi i vecchi esercizi collegati
+            psDelete = conn.prepareStatement(deleteExercisesQuery);
+            psDelete.setInt(1, plan.getId());
+            psDelete.executeUpdate();
+
+            // 3. Inserisci i nuovi esercizi
+            psInsert = conn.prepareStatement(insertExerciseQuery);
+
+            for (WorkoutExercise we : plan.getExercises()) {
+                // Recupera l'oggetto Exercise (gestendo il doppio campo model)
+                Exercise ex = we.getExercise();
+                if (ex == null) ex = we.getExerciseDefinition();
+
+                // --- LA CORREZIONE È QUI ---
+                // Non ci fidiamo di ex.getId(). Usiamo il metodo helper che cerca l'ID nel DB tramite il nome.
+                // Questo risolve l'errore "Foreign Key Constraint Fails"
+                int realExerciseId = getOrInsertExercise(ex, conn);
+                // ---------------------------
+
+                psInsert.setInt(1, plan.getId());
+                psInsert.setInt(2, realExerciseId); // Usiamo l'ID sicuro recuperato dal DB
+                psInsert.setInt(3, we.getSets());
+                psInsert.setInt(4, we.getReps());
+                psInsert.setInt(5, we.getRestTime());
+                psInsert.addBatch();
+            }
+            psInsert.executeBatch();
+
+            conn.commit(); // Tutto ok, conferma
+
+        } catch (SQLException e) {
+            if (conn != null) conn.rollback(); // Qualcosa è andato storto, annulla tutto
+            throw e;
+        } finally {
+            DAOUtils.closeStatement(psPlan);
+            DAOUtils.closeStatement(psDelete);
+            DAOUtils.closeStatement(psInsert);
+            DAOUtils.closeConnection(conn);
+        }
+    }
 
     @Override
     public void delete(int planId) throws SQLException {
