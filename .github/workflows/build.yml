@@ -2,7 +2,8 @@ name: SonarCloud Analysis
 on:
   push:
     branches:
-      - develop  # Parte in automatico sui push su develop
+      - develop
+      - master # Parte in automatico sui push su develop
   pull_request:
     types: [opened, synchronize, reopened]
   workflow_dispatch: # <--- QUESTO AGGIUNGE IL BOTTONE MANUALE "RUN"
