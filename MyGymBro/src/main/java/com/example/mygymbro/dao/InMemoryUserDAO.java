@@ -1,35 +1,44 @@
 package com.example.mygymbro.dao;
 
-import com.example.mygymbro.model.Athlete;
+
 import com.example.mygymbro.model.User;
-import java.sql.SQLException; // Importante
+import com.example.mygymbro.model.Athlete;
+import com.example.mygymbro.model.PersonalTrainer;
+
+
 import java.util.ArrayList;
 import java.util.List;
 
 public class InMemoryUserDAO implements UserDAO {
 
+
+    // Questo è il nostro "Database in RAM". Statico per sopravvivere ai cambi di scena.
     private static List<User> ramDB = new ArrayList<>();
 
+    // Blocco statico per avere almeno un utente di prova subito
     static {
-        // Correggi il costruttore in base alla tua classe Athlete reale
-        // Esempio generico basato sul tuo codice:
-        ramDB.add(new Athlete(1000, "mario123", "password", "Mario", 25, "mario@email.com", "Rossi", 75, 180));
+        ramDB.add(new Athlete(1000, "mario123", "password", "Mario", 23, "test@test.com","Rossi",78, 180));
     }
 
     @Override
-    public User findByUsername(String username) throws SQLException { // Aggiunto throws
+    public User findByUsername(String username) {
+        // Simulo la SELECT con uno Stream
         return ramDB.stream()
                 .filter(u -> u.getUsername().equals(username))
                 .findFirst()
-                .orElse(null);
+                .orElse(null); // Ritorna null se non lo trova
     }
 
     @Override
-    public void save(User user) throws SQLException { // Aggiunto throws
+    public void save(User user) {
+        // Controllo duplicati (opzionale ma realistico)
         if (findByUsername(user.getUsername()) != null) {
-            // Simuliamo un errore DB se esiste già
-            throw new SQLException("Utente già esistente (RAM DB)");
+            System.out.println("Utente già esistente nel DB RAM!");
+            return; // O lancia eccezione
         }
+        // Simulo la INSERT
         ramDB.add(user);
+        System.out.println("Utente salvato in RAM: " + user.getUsername());
+
     }
 }

@@ -21,11 +21,10 @@ public class ExerciseBean {
     }
 
     // --- Getter e Setter ---
-    public String getGifUrl() { return gifUrl; }
-    public void setGifUrl(String gifUrl) { this.gifUrl = gifUrl; }
 
-    public int getId() { return id; }
-    public void setId(int id) { this.id = id; }
+    public String getId() { return id; }
+    public void setId(String id) { this.id = id; }
+
 
     public String getName() { return name; }
     public void setName(String name) { this.name = name; }

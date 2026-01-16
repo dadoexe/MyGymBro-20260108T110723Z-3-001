@@ -1,30 +1,47 @@
 package com.example.mygymbro.dao;
 
-import com.example.mygymbro.bean.WorkoutPlanBean;
-import java.sql.SQLException; // Importante
+
+import com.example.mygymbro.model.WorkoutPlan;
+import com.example.mygymbro.model.Athlete;
+
+import java.sql.SQLException;
+
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
 public class InMemoryWorkoutPlanDAO implements WorkoutPlanDAO {
 
-    private static List<WorkoutPlanBean> ramPlans = new ArrayList<>();
+
+    // "Database" statico per le schede (model.WorkoutPlan)
+    private static List<WorkoutPlan> ramPlans = new ArrayList<>();
 
     @Override
-    public void savePlan(WorkoutPlanBean plan) throws SQLException {
+    public void save(WorkoutPlan plan) throws SQLException {
+        // Simulazione salvataggio con gestione semplice degli ID
+        if (plan.getId() == 0) {
+            int newId = ramPlans.size() + 1;
+            plan.setId(newId);
+        } else {
+            ramPlans.removeIf(p -> p.getId() == plan.getId());
+        }
         ramPlans.add(plan);
+        System.out.println("[RAM DB] Piano salvato: " + plan.getName());
     }
 
     @Override
-    public List<WorkoutPlanBean> loadPlansByUsername(String username) throws SQLException {
-        // Nota: Assumiamo che il Bean abbia il campo athleteUsername
+    public List<WorkoutPlan> findByAthlete(Athlete athlete) throws SQLException {
+        if (athlete == null) return new ArrayList<>();
         return ramPlans.stream()
-                // .filter(p -> p.getAthleteUsername().equals(username)) // Decommenta se hai il campo
+                .filter(p -> p.getAthlete() != null && p.getAthlete().getId() == athlete.getId())
+
                 .collect(Collectors.toList());
     }
 
     @Override
     public void delete(int id) throws SQLException {
-        ramPlans.removeIf(p -> p.getId() == id); // Assumendo che il bean abbia getId()
+
+        ramPlans.removeIf(p -> p.getId() == id);
+
     }
 }

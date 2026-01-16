@@ -1,11 +1,21 @@
 package com.example.mygymbro.controller;
 
+import com.example.mygymbro.bean.ExerciseBean;
+import com.example.mygymbro.bean.UserBean;
+import com.example.mygymbro.bean.WorkoutExerciseBean;
 import com.example.mygymbro.bean.WorkoutPlanBean;
-import com.example.mygymbro.dao.*;
-import com.example.mygymbro.model.Exercise;
-import com.example.mygymbro.view.WorkoutBuilderView;
 
+import com.example.mygymbro.dao.DAOFactory; // <--- IMPORTANTE
+import com.example.mygymbro.dao.ExerciseDAO;
+import com.example.mygymbro.dao.WorkoutPlanDAO;
+import com.example.mygymbro.model.*;
+import com.example.mygymbro.views.WorkoutBuilderView;
+
+
+import java.sql.SQLException;
+import java.util.Date;
 import java.util.List;
+import java.util.stream.Collectors;
 
 public class PlanManagerController implements Controller {
 
@@ -18,14 +28,16 @@ public class PlanManagerController implements Controller {
     public PlanManagerController(WorkoutBuilderView view) {
         this.view = view;
 
-        // 1. Inizializzo i DAO (sempre)
-        this.workoutPlanDAO = new MySQLWorkoutPlanDAO();
-        this.exerciseDAO = new RestApiExerciseDAO();
 
-        // 2. Creo un Bean VUOTO (perché è un nuovo piano)
+        // 1. USARE LA FACTORY! (Altrimenti addio Demo Mode)
+        this.workoutPlanDAO = DAOFactory.getWorkoutPlanDAO();
+        this.exerciseDAO = DAOFactory.getExerciseDAO();
+
+
+        // 2. Creo un Bean VUOTO
         this.currentPlan = new WorkoutPlanBean();
 
-        // 3. Carico la lista degli esercizi disponibili (per il menu a tendina)
+        // 3. Carico esercizi
         loadAvailableExercises();
     }
 
@@ -33,35 +45,159 @@ public class PlanManagerController implements Controller {
     public PlanManagerController(WorkoutBuilderView view, WorkoutPlanBean planToEdit) {
         this.view = view;
 
-        // 1. Inizializzo i DAO
-        this.workoutPlanDAO = new MySQLWorkoutPlanDAO();
-        this.exerciseDAO = new RestApiExerciseDAO();
 
-        // 2. Uso il Bean PASSATO (perché stiamo modificando)
+        // 1. USARE LA FACTORY!
+        this.workoutPlanDAO = DAOFactory.getWorkoutPlanDAO();
+        this.exerciseDAO = DAOFactory.getExerciseDAO();
+
+
+        // 2. Uso il Bean passato
         this.currentPlan = planToEdit;
 
-        // 3. Popolo la View con i dati vecchi!
-        // Qui diciamo alla grafica: "Scrivi 'Scheda Massa' nel titolo e riempi la tabella"
+        // 3. Popolo la View
         populateViewWithPlanData();
-
-        // 4. Carico comunque gli esercizi per il menu a tendina
         loadAvailableExercises();
     }
 
-    // --- METODI PRIVATI DI UTILITÀ ---
+    // --- METODI DI UTILITÀ ---
 
     private void loadAvailableExercises() {
-        // Chiama il DAO per avere la lista di TUTTI gli esercizi del sistema
-        // List<ExerciseBean> exercises = exerciseDAO.findAll();
-        // view.populateExerciseMenu(exercises);
+        try {
+            // Il DAO restituisce MODEL
+            List<Exercise> exercises = exerciseDAO.findAll();
+
+            // Convertiamo in BEAN per la View
+            List<ExerciseBean> beans = exercises.stream()
+                    .map(this::toExerciseBean)
+                    .collect(Collectors.toList());
+
+            view.populateExerciseMenu(beans);
+        } catch (Exception e) {
+            // Catch generico perché RestApiExerciseDAO potrebbe lanciare eccezioni non SQL
+            view.showError("Impossibile caricare gli esercizi: " + e.getMessage());
+            e.printStackTrace();
+        }
     }
 
     private void populateViewWithPlanData() {
-        // view.setPlanName(currentPlan.getName());
-        // view.updateExerciseTable(currentPlan.getExercises());
+        if (currentPlan == null) return;
+        view.setPlanName(currentPlan.getName());
+        view.updateExerciseTable(currentPlan.getExerciseList());
     }
 
-    // ... metodi handleAddExercise, handleSavePlan, dispose ...
+    // --- MAPPING (Traduttori) ---
+
+    // Model -> Bean
+    private ExerciseBean toExerciseBean(Exercise e) {
+        if (e == null) return null;
+
+        ExerciseBean bean = new ExerciseBean();
+        // Setto i campi uno per uno (sicuro al 100%)
+        bean.setId(String.valueOf(e.getId())); // Converto int -> String
+        bean.setName(e.getName());
+        bean.setDescription(e.getDescription());
+        // Controllo null sul gruppo muscolare per evitare crash
+        if (e.getMuscleGroup() != null) {
+            bean.setMuscleGroup(e.getMuscleGroup().name());
+        } else {
+            bean.setMuscleGroup("UNKNOWN");
+        }
+
+        // Se nel Bean hai altri campi obbligatori (es. gifUrl), settali qui o lasciali null/vuoti
+        // bean.setGifUrl("");
+
+        return bean;
+    }
+
+    // Bean -> Model (Per WorkoutExercise)
+    private WorkoutExercise toModelWorkoutExercise(WorkoutExerciseBean b) throws SQLException {
+        if (b == null) return null;
+
+        // CORREZIONE: Chiamo il DAO aspettandomi un OGGETTO SINGOLO (non una lista)
+        Exercise definition = exerciseDAO.findByName(b.getExerciseName());
+
+        // Controllo se è null (cioè se non è stato trovato)
+        if (definition == null) {
+            throw new IllegalStateException("Esercizio non trovato nel database: " + b.getExerciseName());
+        }
+
+        // Creo l'oggetto usando la definizione trovata
+        return new WorkoutExercise(definition, b.getSets(), b.getReps(), b.getRestTime());
+    }
+
+    // Bean -> Model (Per WorkoutPlan)
+    private WorkoutPlan toModelWorkoutPlan(WorkoutPlanBean bean) throws SQLException {
+        if (bean == null) return null;
+
+        UserBean userBean = SessionManager.getInstance().getCurrentUser();
+        if (userBean == null) {
+            throw new IllegalStateException("Errore: Nessun utente loggato.");
+        }
+
+        // Creiamo un oggetto "dummy" Athlete solo per passare l'ID al DAO
+        // Assumiamo che UserBean abbia un metodo getId() che ritorna l'int del DB
+        Athlete athlete = new Athlete();
+
+        // ATTENZIONE: Assicurati che UserBean abbia il metodo getId()!
+        // Se getId() ritorna String, fai Integer.parseInt(userBean.getId())
+        athlete.setId(userBean.getId());
+
+        // Creo il Model del piano
+        int idToUse = bean.getId();
+
+        WorkoutPlan plan = new WorkoutPlan(
+                idToUse, // <--- PRIMA C'ERA SCRITTO 0
+                bean.getName(),
+                bean.getComment(),
+                new Date(),
+                athlete
+        );
+
+        // Aggiungo gli esercizi convertiti
+        for (WorkoutExerciseBean web : bean.getExerciseList()) {
+            plan.addExercise(toModelWorkoutExercise(web));
+        }
+
+        return plan;
+    }
+
+    // --- LOGICA DI SALVATAGGIO ---
+
+    public void handleSavePlan() {
+
+        try {
+            // 1. Recupero i dati aggiornati dalla View (se necessario)
+            // Se la view aggiorna direttamente 'currentPlan' (binding), questo step è automatico.
+            // Altrimenti dovresti fare: currentPlan.setName(view.getPlanName()); etc.
+            currentPlan.setName(view.getPlanName());
+            currentPlan.setComment(view.getComment());
+
+            // Verifica di sicurezza (opzionale ma consigliata)
+            if (currentPlan.getName() == null || currentPlan.getName().trim().isEmpty()) {
+                view.showError("Devi dare un nome alla scheda!");
+                return;
+            }
+            // 2. Converto BEAN -> MODEL
+            WorkoutPlan planModel = toModelWorkoutPlan(currentPlan);
+
+            // 3. Salvo il MODEL tramite il DAO
+            workoutPlanDAO.save(planModel);
+
+            // 4. Feedback
+            // view.showMessage("Piano salvato con successo!");
+            // Opzionale: chiudere la finestra o tornare indietro
+            ApplicationController.getInstance().loadHome();
+
+        } catch (SQLException e) {
+            view.showError("Errore Database: " + e.getMessage());
+            e.printStackTrace();
+        } catch (IllegalStateException e) {
+            view.showError("Errore Dati: " + e.getMessage());
+        } catch (Exception e) {
+            view.showError("Errore imprevisto: " + e.getMessage());
+            e.printStackTrace();
+        }
+    }
 
     public void hanldeAddExercise(Exercise exercise) {
     }

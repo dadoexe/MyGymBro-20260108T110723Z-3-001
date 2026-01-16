@@ -1,6 +1,9 @@
 package com.example.mygymbro.dao;
 
-import com.example.mygymbro.bean.ExerciseBean;
+
+import com.example.mygymbro.model.Exercise;
+import com.example.mygymbro.model.MuscleGroup;
+
 import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
 
@@ -17,13 +20,16 @@ public class RestApiExerciseDAO implements ExerciseDAO {
 
     // URL dell'API esterna
     private static final String API_URL = "https://exercisedb.p.rapidapi.com/exercises?limit=10";
-    // Chiave API (Registrati su RapidAPI per averne una vera, o usa una demo se disponibile)
-    private static final String API_KEY = "INSERISCI_QUI_LA_TUA_CHIAVE_RAPIDAPI";
+
+    // Chiave API (Sostituisci con la tua chiave reale se vuoi testare)
+    private static final String API_KEY = "b5a76e4d57msh6edf21dcd3dd851p199802jsne8b14218cbd4";
     private static final String API_HOST = "exercisedb.p.rapidapi.com";
 
     @Override
-    public List<ExerciseBean> findAll() {
-        List<ExerciseBean> myBeanList = new ArrayList<>();
+    public List<Exercise> findAll() {
+        // Lista di Model che restituiremo
+        List<Exercise> modelList = new ArrayList<>();
+
 
         try {
             // 1. Costruzione della richiesta HTTP (Java 11+)
@@ -38,45 +44,69 @@ public class RestApiExerciseDAO implements ExerciseDAO {
             HttpResponse<String> response = HttpClient.newHttpClient()
                     .send(request, HttpResponse.BodyHandlers.ofString());
 
-            // Controllo se la chiamata è andata a buon fine (Code 200)
+
+            // 3. Controllo risposta
             if (response.statusCode() == 200) {
                 String jsonBody = response.body();
 
-                // 3. Parsing JSON con GSON
+                // Parsing JSON con GSON
                 Gson gson = new Gson();
-                // Dico a Gson: "Guarda che mi arriva una Lista di ApiExerciseDto"
-                Type listType = new TypeToken<List<ApiExerciseDto>>(){}.getType();
+                Type listType = new TypeToken<List<ApiExerciseDto>>() {}.getType();
                 List<ApiExerciseDto> apiList = gson.fromJson(jsonBody, listType);
 
-                // 4. ADAPTER: Converto i DTO dell'API nei miei Bean
-                for (ApiExerciseDto dto : apiList) {
-                    ExerciseBean bean = new ExerciseBean();
-                    bean.setName(dto.name); // Mapping diretto
-                    bean.setMuscleGroup(dto.bodyPart); // Mapping con cambio nome
-                    bean.setGifUrl(dto.gifUrl);
+                // 4. Mapping: DTO (Api) -> MODEL (Dominio)
+                if (apiList != null) {
+                    for (ApiExerciseDto dto : apiList) {
 
-                    // Uniamo le istruzioni in una stringa unica per la descrizione
-                    if (dto.instructions != null && !dto.instructions.isEmpty()) {
-                        bean.setDescription(String.join(". ", dto.instructions));
+                        // Generiamo un ID numerico basato sull'hash dell'ID stringa dell'API
+                        // (Non perfetto, ma funzionale per la demo in RAM)
+                        int fakeId = (dto.id != null) ? dto.id.hashCode() : 0;
+
+                        // Uniamo le istruzioni (che sono una lista) in un'unica stringa
+                        String description = (dto.instructions != null) ? String.join(" ", dto.instructions) : "Nessuna descrizione";
+
+                        // Gestione Enum MuscleGroup (con fallback se non matcha)
+                        MuscleGroup mg = MuscleGroup.CHEST; // Default
+                        try {
+                            if (dto.bodyPart != null) {
+                                // Sostituisce spazi con underscore e mette in maiuscolo (es: "upper legs" -> "UPPER_LEGS")
+                                String enumName = dto.bodyPart.toUpperCase().replace(" ", "_");
+                                mg = MuscleGroup.valueOf(enumName);
+                            }
+                        } catch (IllegalArgumentException e) {
+                            // Se il muscolo dell'API non esiste nel nostro Enum, teniamo il default (o gestisci diversamente)
+                            System.out.println("Gruppo muscolare non mappato: " + dto.bodyPart);
+                        }
+
+                        // Creazione del MODEL
+                        Exercise model = new Exercise(fakeId, dto.name, description, mg);
+                        modelList.add(model);
                     }
-
-                    myBeanList.add(bean);
                 }
             } else {
-                System.err.println("Errore API: " + response.statusCode());
+                System.err.println("Errore API: Codice " + response.statusCode());
+
             }
 
         } catch (IOException | InterruptedException e) {
             e.printStackTrace();
-            // In caso di errore, potresti ritornare una lista vuota o lanciare un'eccezione custom
+
         }
 
-        return myBeanList;
+        return modelList;
+    }
+
+    @Override
+    public Exercise findByName(String name) {
+        // Implementazione inefficiente ma funzionante: scarica tutto e filtra in memoria
+        return findAll().stream()
+                .filter(e -> e.getName().equalsIgnoreCase(name))
+                .findFirst()
+                .orElse(null);
     }
 
     // --- CLASSE INTERNA PER MAPPING JSON (DTO) ---
-    // Questa classe serve SOLO per leggere il JSON esatto che arriva dall'API.
-    // I campi devono avere lo stesso nome del JSON (case sensitive).
+
     private class ApiExerciseDto {
         String bodyPart;
         String equipment;
@@ -84,6 +114,8 @@ public class RestApiExerciseDAO implements ExerciseDAO {
         String id;
         String name;
         String target;
-        List<String> instructions; // L'API restituisce un array di stringhe
+
+        List<String> instructions;
     }
 }
+

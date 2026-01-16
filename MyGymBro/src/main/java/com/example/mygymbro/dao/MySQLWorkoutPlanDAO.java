@@ -11,73 +11,116 @@ import java.util.List;
 public class MySQLWorkoutPlanDAO implements WorkoutPlanDAO {
 
     @Override
-    public void save(WorkoutPlan workoutPlan) throws SQLException {
-
-        //scrivo la query
-        String planQuery = "INSERT INTO workout_plan (name, comment, creationDate, athlete_id) VALUES (?, ?, ?, ?)";
-        String exerciseQuery = "INSERT INTO workout_exercise (workout_plan_id, exercise_id, sets, reps, rest_time) VALUES (?, ?, ?, ?, ?)";
-        //dichiaro le risorse
+    public void save(WorkoutPlan plan) throws SQLException {
         Connection conn = null;
         PreparedStatement stmtPlan = null;
-        PreparedStatement stmtExercise = null; //risorsa per gli esercizi
+        PreparedStatement stmtLink = null;
         ResultSet generatedKeys = null;
 
+        // Query differenziate
+        String insertSQL = "INSERT INTO workout_plan (name, comment, creation_date, athlete_id) VALUES (?, ?, ?, ?)";
+        String updateSQL = "UPDATE workout_plan SET name = ?, comment = ?, creation_date = ? WHERE id = ?";
+
+        String deleteExercisesSQL = "DELETE FROM workout_exercise WHERE workout_plan_id = ?";
+        String insertLinkSQL = "INSERT INTO workout_exercise (workout_plan_id, exercise_id, sets, reps, rest_time) VALUES (?, ?, ?, ?, ?)";
+
+        // Se l'ID è > 0, significa che la scheda esiste già -> UPDATE
+        boolean isUpdate = (plan.getId() > 0);
 
         try {
             conn = DBConnect.getConnection();
-            // DISABILITA L'AUTO-COMMIT per gestire la transazione
-            // Se qualcosa va storto mentre salvo gli esercizi, annullo anche la creazione della scheda
-            conn.setAutoCommit(false);
+            conn.setAutoCommit(false); // Transazione ON
 
-            stmtPlan = conn.prepareStatement(planQuery, Statement.RETURN_GENERATED_KEYS);
-            stmtPlan.setString(1, workoutPlan.getName());
-            stmtPlan.setString(2, workoutPlan.getComment());
-            stmtPlan.setDate(3, new java.sql.Date(workoutPlan.getCreationDate().getTime()));
+            // --- A. SALVIAMO O AGGIORNIAMO LA SCHEDA (PADRE) ---
+            if (isUpdate) {
+                stmtPlan = conn.prepareStatement(updateSQL);
+                stmtPlan.setString(1, plan.getName());
+                stmtPlan.setString(2, plan.getComment());
+                stmtPlan.setDate(3, new java.sql.Date(plan.getCreationDate().getTime()));
+                stmtPlan.setInt(4, plan.getId()); // WHERE id = ?
+                stmtPlan.executeUpdate();
+            } else {
+                stmtPlan = conn.prepareStatement(insertSQL, Statement.RETURN_GENERATED_KEYS);
+                stmtPlan.setString(1, plan.getName());
+                stmtPlan.setString(2, plan.getComment());
+                stmtPlan.setDate(3, new java.sql.Date(plan.getCreationDate().getTime()));
+                stmtPlan.setInt(4, plan.getAthleteId());
+                stmtPlan.executeUpdate();
 
-            //aggiungo l'id DELL'ATLETA per associarlo al corrispettivo piano
-            stmtPlan.setInt(4, workoutPlan.getAthlete().getId());
-
-            stmtPlan.executeUpdate();
-
-            //recupero id generato
-            generatedKeys = stmtPlan.getGeneratedKeys();
-            int newPlanId = -1;
-            if (generatedKeys.next()) {
-                newPlanId = generatedKeys.getInt(1);
-                workoutPlan.setId(newPlanId);
-            }else{throw new SQLException("Workout Plan creation failed, unable to get any id");}
-
-            //ora salviamo i figli (gli esercizi interni al piano)
-            //usiamo l'id appena recuperato (newPlanId)
-            stmtExercise = conn.prepareStatement(exerciseQuery);
-            for(WorkoutExercise ex : workoutPlan.getExercises()){
-                stmtExercise.setInt(1, newPlanId);
-                stmtExercise.setInt(2, ex.getExerciseDefinition().getId());
-                stmtExercise.setInt(3,ex.getSets());
-                stmtExercise.setInt(4, ex.getReps());
-                stmtExercise.setInt(5, ex.getRestTime());
-                stmtExercise.executeUpdate();
+                // Recuperiamo il nuovo ID generato
+                generatedKeys = stmtPlan.getGeneratedKeys();
+                if (generatedKeys.next()) {
+                    plan.setId(generatedKeys.getInt(1));
+                }
             }
-            conn.commit();
+
+            // --- B. GESTIONE ESERCIZI (FIGLI) ---
+            // Strategia: Se è un update, prima puliamo i vecchi collegamenti
+            if (isUpdate) {
+                try (PreparedStatement delStmt = conn.prepareStatement(deleteExercisesSQL)) {
+                    delStmt.setInt(1, plan.getId());
+                    delStmt.executeUpdate();
+                }
+            }
+
+            // Ora inseriamo gli esercizi (nuovi o aggiornati)
+            stmtLink = conn.prepareStatement(insertLinkSQL);
+            for (WorkoutExercise we : plan.getExercises()) {
+                // 1. Assicuriamoci che l'esercizio esista nel catalogo locale
+                int localExerciseId = getOrInsertExercise(we.getExerciseDefinition(), conn);
+
+                // 2. Creiamo il collegamento
+                stmtLink.setInt(1, plan.getId());
+                stmtLink.setInt(2, localExerciseId);
+                stmtLink.setInt(3, we.getSets());
+                stmtLink.setInt(4, we.getReps());
+                stmtLink.setInt(5, we.getRestTime());
+                stmtLink.addBatch();
+            }
+            stmtLink.executeBatch();
+
+            conn.commit(); // Conferma tutto
 
         } catch (SQLException e) {
-            //facciamo il roll back in caso qualcosa vada storto
-            if(conn != null){
-                try{conn.rollback();}catch(SQLException ex){ex.printStackTrace();}
-            }throw e; //rilancia al controller per l'alert
+            if (conn != null) conn.rollback();
+            throw e;
         } finally {
-                try {
-                    if(conn != null){ conn.setAutoCommit(true);}//rimetto autocommit a ture prima di chiudere o restituire la ocnn
-                }catch(SQLException e){
-                    e.printStackTrace();
-                }
-                DAOUtils.closeStatement(stmtPlan);
-                DAOUtils.closeStatement(stmtExercise);
-                DAOUtils.closeResultSet(generatedKeys);
-
-                //infine chiudiamo la connesione
-            DAOUtils.closeConnection(conn);
+            if (generatedKeys != null) DAOUtils.closeResultSet(generatedKeys);
+            if (stmtPlan != null) DAOUtils.closeStatement(stmtPlan);
+            if (stmtLink != null) DAOUtils.closeStatement(stmtLink);
+            if (conn != null) DAOUtils.closeConnection(conn);
         }
+    }
+
+    private int getOrInsertExercise(Exercise ex, Connection conn) throws SQLException {
+        // 1. Cerca se esiste già
+        String searchSQL = "SELECT id FROM exercise WHERE name = ?";
+        try (PreparedStatement stmt = conn.prepareStatement(searchSQL)) {
+            stmt.setString(1, ex.getName());
+            try (ResultSet rs = stmt.executeQuery()) {
+                if (rs.next()) {
+                    return rs.getInt("id");
+                }
+            }
+        }
+
+        // 2. Se non esiste, crealo
+        String insertSQL = "INSERT INTO exercise (name, description, muscle_group) VALUES (?, ?, ?)";
+        try (PreparedStatement stmt = conn.prepareStatement(insertSQL, Statement.RETURN_GENERATED_KEYS)) {
+            stmt.setString(1, ex.getName());
+            stmt.setString(2, ex.getDescription());
+            String muscle = (ex.getMuscleGroup() != null) ? ex.getMuscleGroup().name() : "CHEST";
+            stmt.setString(3, muscle);
+
+            stmt.executeUpdate();
+
+            try (ResultSet rs = stmt.getGeneratedKeys()) {
+                if (rs.next()) {
+                    return rs.getInt(1);
+                }
+            }
+        }
+        throw new SQLException("Impossibile salvare l'esercizio locale: " + ex.getName());
     }
 
 
@@ -103,7 +146,7 @@ public class MySQLWorkoutPlanDAO implements WorkoutPlanDAO {
                 Date date = rs.getDate("creation_date");
 
                 WorkoutPlan plan = new WorkoutPlan(planID, name, comment, date, athlete);
-                plan.setId(planID);
+                //plan.setId(planID);
                 //metodo privato che fa una seconda query per riempire la lista
                 List<WorkoutExercise> exercises = loadExercisesForPlan(planID, conn);
                 for(WorkoutExercise ex : exercises){
@@ -169,45 +212,48 @@ public class MySQLWorkoutPlanDAO implements WorkoutPlanDAO {
     }
 
 
-        @Override
-        public void delete(int planId) throws SQLException {
+    @Override
+    public void delete(int planId) throws SQLException {
+        Connection conn = null;
+        PreparedStatement stmtDeleteExercise = null;
+        PreparedStatement stmtDeletePlan = null;
 
+        String deleteExerciseQuery = "DELETE FROM workout_exercise WHERE workout_plan_id = ?";
+        String deleteWorkoutPlanQuery = "DELETE FROM workout_plan WHERE id = ?";
 
-                Connection conn = null;
-                PreparedStatement stmtDeleteExercise = null;
-                PreparedStatement stmtDeletePlan = null;
-                ResultSet rs = null;
-                String deleteExerciseQuery = "DELETE FROM workout_exercise WHERE workout_plan_id = ?";
-                String deleteWorkoutPlanQuery = "DELETE FROM workout_plan WHERE id = ?";
-                try{
-                    conn = DBConnect.getConnection();
-                    conn.setAutoCommit(false);
-                    //cancellazione figli
-                    stmtDeleteExercise = conn.prepareStatement(deleteExerciseQuery);
-                    stmtDeleteExercise.setInt(1, planId );
+        try {
+            conn = DBConnect.getConnection();
+            conn.setAutoCommit(false);
 
-                    //cancellazione padre
-                    stmtDeletePlan = conn.prepareStatement(deleteWorkoutPlanQuery);
-                    stmtDeletePlan.setInt(1, planId);
-                    int rowsAffected = stmtDeleteExercise.executeUpdate();
+            // 1. Cancellazione figli (Esercizi)
+            stmtDeleteExercise = conn.prepareStatement(deleteExerciseQuery);
+            stmtDeleteExercise.setInt(1, planId);
+            stmtDeleteExercise.executeUpdate(); // ESEGUIAMO!
 
-                    if (rowsAffected == 0) {
-                        // Opzionale: Se vuoi sapere se l'ID esisteva o no
-                        System.out.println("Nessuna scheda trovata con ID: " + planId);
-                    }
-                    //confermo
-                    conn.commit();
+            // 2. Cancellazione padre (Scheda)
+            stmtDeletePlan = conn.prepareStatement(deleteWorkoutPlanQuery);
+            stmtDeletePlan.setInt(1, planId);
 
-                }catch(SQLException e){
-                    if(conn != null){
-                        try{conn.rollback();}catch(SQLException ex){ex.printStackTrace();}
-                    }throw e;
+            // --- ECCO L'ERRORE CHE AVEVI: MANCAVA QUESTA RIGA! ---
+            int rows = stmtDeletePlan.executeUpdate();
+            // -----------------------------------------------------
 
-                }finally{
-                    DAOUtils.closeStatement(stmtDeleteExercise);
-                    DAOUtils.closeStatement(stmtDeletePlan);
-                    DAOUtils.closeConnection(conn);
-                }
+            if (rows == 0) {
+                System.out.println("Nessuna scheda trovata con ID: " + planId);
+            }
+
+            conn.commit();
+            System.out.println("Cancellazione completata per ID: " + planId);
+
+        } catch (SQLException e) {
+            if (conn != null) {
+                try { conn.rollback(); } catch (SQLException ex) { ex.printStackTrace(); }
+            }
+            throw e;
+        } finally {
+            DAOUtils.closeStatement(stmtDeleteExercise);
+            DAOUtils.closeStatement(stmtDeletePlan);
+            DAOUtils.closeConnection(conn);
         }
-
     }
+}

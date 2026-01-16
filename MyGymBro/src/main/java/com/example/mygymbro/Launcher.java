@@ -1,9 +1,8 @@
 package com.example.mygymbro;
 
-import javafx.application.Application;
-
 public class Launcher {
     public static void main(String[] args) {
-        Application.launch(HelloApplication.class, args);
+        // Invece di Application.launch, chiamiamo direttamente il main della nostra classe Main
+        Main.main(args);
     }
 }

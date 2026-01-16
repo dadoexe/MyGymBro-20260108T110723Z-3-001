@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+<?import javafx.geometry.Insets?>
+
+<VBox xmlns="http://javafx.com/javafx" xmlns:fx="http://javafx.com/fxml"
+      fx:controller="com.example.mygymbro.views.GraphicWorkoutBuilderView"
+      spacing="10" alignment="CENTER">
+
+    <padding><Insets top="20" right="20" bottom="20" left="20"/></padding>
+
+    <Label text="Crea Nuova Scheda" style="-fx-font-size: 20px; -fx-font-weight: bold;"/>
+
+    <TextField fx:id="txtPlanName" promptText="Nome della Scheda (es. Ipertrofia)" maxWidth="400"/>
+    <TextArea fx:id="txtComment" promptText="Commenti..." maxWidth="400" prefHeight="50"/>
+
+    <Separator/>
+
+    <HBox spacing="10" alignment="CENTER">
+        <ComboBox fx:id="comboExercises" promptText="Seleziona Esercizio" prefWidth="200"/>
+        <TextField fx:id="txtSets" promptText="Sets" prefWidth="50"/>
+        <TextField fx:id="txtReps" promptText="Reps" prefWidth="50"/>
+        <TextField fx:id="txtRest" promptText="Rest (sec)" prefWidth="70"/>
+        <Button text="Aggiungi" onAction="#onAddExercise"/>
+    </HBox>
+
+    <TableView fx:id="tableExercises" maxWidth="600" prefHeight="200">
+        <columns>
+            <TableColumn fx:id="colName" text="Esercizio" prefWidth="200"/>
+            <TableColumn fx:id="colSets" text="Sets" prefWidth="50"/>
+            <TableColumn fx:id="colReps" text="Reps" prefWidth="50"/>
+            <TableColumn fx:id="colRest" text="Recupero" prefWidth="80"/>
+        </columns>
+    </TableView>
+
+    <HBox spacing="20" alignment="CENTER">
+        <Button text="Annulla" onAction="#onCancel"/>
+        <Button fx:id="btnSave" text="SALVA SCHEDA" onAction="#onSavePlan" style="-fx-background-color: #4CAF50; -fx-text-fill: white;"/>
+    </HBox>
+
+</VBox>

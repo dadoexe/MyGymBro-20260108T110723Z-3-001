@@ -1,13 +1,17 @@
 package com.example.mygymbro.bean;
 
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
 
 public class WorkoutPlanBean {
 
     private String name;
     private String comment;
-    private String athleteUsername;
+
+    private int id;
+    private Date creationDate;
+
     // Lista di EXERCISE BEAN, non di entity!
     private List<WorkoutExerciseBean> exerciseList = new ArrayList<>();
 
@@ -23,11 +27,13 @@ public class WorkoutPlanBean {
     public void setExerciseList(List<WorkoutExerciseBean> exerciseList) {
         this.exerciseList = exerciseList;
     }
-    public String getAthleteUsername() { return athleteUsername; }
 
-    public void setAthleteUsername(String athleteUsername) {
-        this.athleteUsername = athleteUsername;
-    }
+    public Date getCreationDate() { return creationDate; }
+    public void setCreationDate(Date creationDate) { this.creationDate = creationDate; }
+
+    public int getId() { return id; }
+    public void setId(int id) { this.id = id; }
+
 
     public void addExerciseBean(WorkoutExerciseBean exerciseBean) {
         this.exerciseList.add(exerciseBean);
