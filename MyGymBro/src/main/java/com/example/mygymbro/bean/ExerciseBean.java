@@ -6,6 +6,7 @@ public class ExerciseBean {
     private String name;
     private String description;
     private String muscleGroup; // Usiamo String per facilitare la visualizzazione nella View
+    private String gifUrl;
 
     public ExerciseBean() {
         // Costruttore vuoto obbligatorio
@@ -20,8 +21,10 @@ public class ExerciseBean {
     }
 
     // --- Getter e Setter ---
+
     public String getId() { return id; }
     public void setId(String id) { this.id = id; }
+
 
     public String getName() { return name; }
     public void setName(String name) { this.name = name; }

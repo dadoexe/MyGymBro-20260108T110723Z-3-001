@@ -1,14 +1,17 @@
 package com.example.mygymbro.dao;
 
+
 import com.example.mygymbro.model.WorkoutPlan;
 import com.example.mygymbro.model.Athlete;
 
 import java.sql.SQLException;
+
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
 public class InMemoryWorkoutPlanDAO implements WorkoutPlanDAO {
+
 
     // "Database" statico per le schede (model.WorkoutPlan)
     private static List<WorkoutPlan> ramPlans = new ArrayList<>();
@@ -31,12 +34,15 @@ public class InMemoryWorkoutPlanDAO implements WorkoutPlanDAO {
         if (athlete == null) return new ArrayList<>();
         return ramPlans.stream()
                 .filter(p -> p.getAthlete() != null && p.getAthlete().getId() == athlete.getId())
+
                 .collect(Collectors.toList());
     }
 
     @Override
     public void delete(int id) throws SQLException {
+
         ramPlans.removeIf(p -> p.getId() == id);
+
     }
 
     @Override
