@@ -1,13 +1,16 @@
 package com.example.mygymbro.dao;
 
+
 import com.example.mygymbro.model.User;
 import com.example.mygymbro.model.Athlete;
 import com.example.mygymbro.model.PersonalTrainer;
+
 
 import java.util.ArrayList;
 import java.util.List;
 
 public class InMemoryUserDAO implements UserDAO {
+
 
     // Questo è il nostro "Database in RAM". Statico per sopravvivere ai cambi di scena.
     private static List<User> ramDB = new ArrayList<>();
@@ -36,5 +39,6 @@ public class InMemoryUserDAO implements UserDAO {
         // Simulo la INSERT
         ramDB.add(user);
         System.out.println("Utente salvato in RAM: " + user.getUsername());
+
     }
 }

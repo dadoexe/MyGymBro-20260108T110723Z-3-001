@@ -1,7 +1,9 @@
 package com.example.mygymbro.dao;
 
+
 import com.example.mygymbro.model.Exercise;
 import com.example.mygymbro.model.MuscleGroup;
+
 import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
 
@@ -18,6 +20,7 @@ public class RestApiExerciseDAO implements ExerciseDAO {
 
     // URL dell'API esterna
     private static final String API_URL = "https://exercisedb.p.rapidapi.com/exercises?limit=10";
+
     // Chiave API (Sostituisci con la tua chiave reale se vuoi testare)
     private static final String API_KEY = "b5a76e4d57msh6edf21dcd3dd851p199802jsne8b14218cbd4";
     private static final String API_HOST = "exercisedb.p.rapidapi.com";
@@ -26,6 +29,7 @@ public class RestApiExerciseDAO implements ExerciseDAO {
     public List<Exercise> findAll() {
         // Lista di Model che restituiremo
         List<Exercise> modelList = new ArrayList<>();
+
 
         try {
             // 1. Costruzione della richiesta HTTP (Java 11+)
@@ -39,6 +43,7 @@ public class RestApiExerciseDAO implements ExerciseDAO {
             // 2. Invio richiesta e ricezione risposta
             HttpResponse<String> response = HttpClient.newHttpClient()
                     .send(request, HttpResponse.BodyHandlers.ofString());
+
 
             // 3. Controllo risposta
             if (response.statusCode() == 200) {
@@ -80,10 +85,12 @@ public class RestApiExerciseDAO implements ExerciseDAO {
                 }
             } else {
                 System.err.println("Errore API: Codice " + response.statusCode());
+
             }
 
         } catch (IOException | InterruptedException e) {
             e.printStackTrace();
+
         }
 
         return modelList;
@@ -99,6 +106,7 @@ public class RestApiExerciseDAO implements ExerciseDAO {
     }
 
     // --- CLASSE INTERNA PER MAPPING JSON (DTO) ---
+
     private class ApiExerciseDto {
         String bodyPart;
         String equipment;
@@ -106,6 +114,7 @@ public class RestApiExerciseDAO implements ExerciseDAO {
         String id;
         String name;
         String target;
+
         List<String> instructions;
     }
 }

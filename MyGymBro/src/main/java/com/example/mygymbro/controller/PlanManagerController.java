@@ -4,11 +4,13 @@ import com.example.mygymbro.bean.ExerciseBean;
 import com.example.mygymbro.bean.UserBean;
 import com.example.mygymbro.bean.WorkoutExerciseBean;
 import com.example.mygymbro.bean.WorkoutPlanBean;
+
 import com.example.mygymbro.dao.DAOFactory; // <--- IMPORTANTE
 import com.example.mygymbro.dao.ExerciseDAO;
 import com.example.mygymbro.dao.WorkoutPlanDAO;
 import com.example.mygymbro.model.*;
 import com.example.mygymbro.views.WorkoutBuilderView;
+
 
 import java.sql.SQLException;
 import java.util.Date;
@@ -26,9 +28,11 @@ public class PlanManagerController implements Controller {
     public PlanManagerController(WorkoutBuilderView view) {
         this.view = view;
 
+
         // 1. USARE LA FACTORY! (Altrimenti addio Demo Mode)
         this.workoutPlanDAO = DAOFactory.getWorkoutPlanDAO();
         this.exerciseDAO = DAOFactory.getExerciseDAO();
+
 
         // 2. Creo un Bean VUOTO
         this.currentPlan = new WorkoutPlanBean();
@@ -41,9 +45,11 @@ public class PlanManagerController implements Controller {
     public PlanManagerController(WorkoutBuilderView view, WorkoutPlanBean planToEdit) {
         this.view = view;
 
+
         // 1. USARE LA FACTORY!
         this.workoutPlanDAO = DAOFactory.getWorkoutPlanDAO();
         this.exerciseDAO = DAOFactory.getExerciseDAO();
+
 
         // 2. Uso il Bean passato
         this.currentPlan = planToEdit;
@@ -191,6 +197,13 @@ public class PlanManagerController implements Controller {
             view.showError("Errore imprevisto: " + e.getMessage());
             e.printStackTrace();
         }
+    }
+
+    public void hanldeAddExercise(Exercise exercise) {
+    }
+
+    public void handleSavePlan(WorkoutPlanBean workoutPlanBean) {
+
     }
 
     @Override

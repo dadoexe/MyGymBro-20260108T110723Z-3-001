@@ -10,7 +10,9 @@ public class DAOFactory {
     // --- INTERRUTTORE GENERALE ---
     // TRUE  = Versione Demo (Dati in RAM, si resettano alla chiusura)
     // FALSE = Versione Produzione (Dati su MySQL + API Reale)
+
     private static final boolean IS_DEMO_VERSION = false;
+
 
     /**
      * Restituisce l'implementazione corretta per la gestione Utenti
@@ -53,4 +55,6 @@ public class DAOFactory {
             // return new MySQLExerciseDAO();
         }
     }
+
 }
+
