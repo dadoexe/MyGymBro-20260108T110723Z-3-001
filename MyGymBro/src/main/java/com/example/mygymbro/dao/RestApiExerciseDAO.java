@@ -16,7 +16,8 @@ import java.util.List;
 
 public class RestApiExerciseDAO implements ExerciseDAO {
 
-    private static final String API_URL = "https://exercisedb.p.rapidapi.com/exercises?limit=10";
+    // URL per scaricare TUTTO (offset 0 e limit 1324) - tutto minuscolo
+    private static final String API_URL = "https://exercisedb.p.rapidapi.com/exercises?offset=0&limit=50";
     private static final String API_KEY = "b5a76e4d57msh6edf21dcd3dd851p199802jsne8b14218cbd4";
     private static final String API_HOST = "exercisedb.p.rapidapi.com";
 
@@ -25,6 +26,7 @@ public class RestApiExerciseDAO implements ExerciseDAO {
         List<Exercise> modelList = new ArrayList<>();
 
         try {
+            System.out.println("VERIFICA URL: Sto chiamando questo indirizzo: " + API_URL);
             HttpRequest request = HttpRequest.newBuilder()
                     .uri(URI.create(API_URL))
                     .header("X-RapidAPI-Key", API_KEY)
@@ -62,6 +64,57 @@ public class RestApiExerciseDAO implements ExerciseDAO {
             e.printStackTrace();
         }
 
+        return modelList;
+    }
+
+    // ... dentro RestApiExerciseDAO ...
+    public List<Exercise> search(String keyword) {
+        List<Exercise> modelList = new ArrayList<>();
+
+        // Se la ricerca è vuota, restituiamo i "consigliati" (la findAll standard)
+        if (keyword == null || keyword.trim().isEmpty()) {
+            return findAll();
+        }
+
+        // COSTRUIAMO L'URL DI RICERCA SPECIFICO
+        // Nota: URLEncoder servirebbe per spazi e caratteri strani, ma per ora semplifichiamo
+        String searchUrl = "https://exercisedb.p.rapidapi.com/exercises/name/" + keyword.trim().replace(" ", "%20") + "?limit=50";
+
+        try {
+            System.out.println("RICERCA LIVE: " + searchUrl); // Debug
+
+            HttpRequest request = HttpRequest.newBuilder()
+                    .uri(URI.create(searchUrl))
+                    .header("X-RapidAPI-Key", "b5a76e4d57msh6edf21dcd3dd851p199802jsne8b14218cbd4") // Usa la tua costante API_KEY
+                    .header("X-RapidAPI-Host", "exercisedb.p.rapidapi.com") // Usa la tua costante API_HOST
+                    .method("GET", HttpRequest.BodyPublishers.noBody())
+                    .build();
+
+            HttpResponse<String> response = HttpClient.newHttpClient()
+                    .send(request, HttpResponse.BodyHandlers.ofString());
+
+            if (response.statusCode() == 200) {
+                // ... (Copia qui la stessa logica di parsing JSON che hai in findAll) ...
+                // Gson gson = new Gson(); ... ecc ecc
+                // Per brevità: è identico al blocco dentro findAll, cambia solo l'URL di partenza.
+
+                String jsonBody = response.body();
+                com.google.gson.Gson gson = new com.google.gson.Gson();
+                java.lang.reflect.Type listType = new com.google.gson.reflect.TypeToken<List<ApiExerciseDto>>() {}.getType();
+                List<ApiExerciseDto> apiList = gson.fromJson(jsonBody, listType);
+
+                if (apiList != null) {
+                    for (ApiExerciseDto dto : apiList) {
+                        int fakeId = (dto.id != null) ? dto.id.hashCode() : 0;
+                        String description = (dto.instructions != null) ? String.join(" ", dto.instructions) : "Descrizione...";
+                        com.example.mygymbro.model.MuscleGroup mg = mapApiBodyPartToEnum(dto.bodyPart);
+                        modelList.add(new Exercise(fakeId, dto.name, description, mg));
+                    }
+                }
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
         return modelList;
     }
 

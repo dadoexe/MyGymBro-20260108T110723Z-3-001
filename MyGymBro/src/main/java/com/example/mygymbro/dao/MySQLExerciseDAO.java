@@ -72,4 +72,9 @@ public class MySQLExerciseDAO implements ExerciseDAO {
         }
         return exercises;
     }
+
+    @Override
+    public List<Exercise> search(String keyword) {
+        return List.of();
+    }
 }

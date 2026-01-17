@@ -6,11 +6,17 @@ import com.example.mygymbro.bean.WorkoutExerciseBean;
 import com.example.mygymbro.bean.WorkoutPlanBean;
 import com.example.mygymbro.dao.DAOFactory; // <--- IMPORTANTE
 import com.example.mygymbro.dao.ExerciseDAO;
+import com.example.mygymbro.dao.RestApiExerciseDAO;
 import com.example.mygymbro.dao.WorkoutPlanDAO;
 import com.example.mygymbro.model.*;
 import com.example.mygymbro.views.WorkoutBuilderView;
 
+import java.net.URI;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
 import java.sql.SQLException;
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -29,7 +35,8 @@ public class PlanManagerController implements Controller {
 
         // 1. USARE LA FACTORY! (Altrimenti addio Demo Mode)
         this.workoutPlanDAO = DAOFactory.getWorkoutPlanDAO();
-        this.exerciseDAO = DAOFactory.getExerciseDAO();
+        //this.exerciseDAO = DAOFactory.getExerciseDAO();
+        this.exerciseDAO = new com.example.mygymbro.dao.RestApiExerciseDAO();
 
         // 2. Creo un Bean VUOTO
         this.currentPlan = new WorkoutPlanBean();
@@ -44,7 +51,8 @@ public class PlanManagerController implements Controller {
 
         // 1. USARE LA FACTORY!
         this.workoutPlanDAO = DAOFactory.getWorkoutPlanDAO();
-        this.exerciseDAO = DAOFactory.getExerciseDAO();
+        //this.exerciseDAO = DAOFactory.getExerciseDAO();
+        this.exerciseDAO = new com.example.mygymbro.dao.RestApiExerciseDAO();
 
         // 2. Uso il Bean passato
         this.currentPlan = planToEdit;
@@ -60,7 +68,7 @@ public class PlanManagerController implements Controller {
         try {
             // Il DAO restituisce MODEL
             List<Exercise> exercises = exerciseDAO.findAll();
-
+            System.out.println("DEBUG: Esercizi scaricati dall'API: " + exercises.size());
             // Convertiamo in BEAN per la View
             List<ExerciseBean> beans = exercises.stream()
                     .map(this::toExerciseBean)
@@ -107,19 +115,45 @@ public class PlanManagerController implements Controller {
         return bean;
     }
 
-    // Bean -> Model (Per WorkoutExercise)
-    private WorkoutExercise toModelWorkoutExercise(WorkoutExerciseBean b) throws SQLException {
+    // Aggiungi questo metodo
+    public List<ExerciseBean> searchExercises(String keyword) {
+        try {
+            // Chiama il nuovo metodo del DAO
+            List<Exercise> results = exerciseDAO.search(keyword);
+
+            // Converte in Bean
+            return results.stream()
+                    .map(this::toExerciseBean)
+                    .collect(Collectors.toList());
+        } catch (Exception e) {
+            e.printStackTrace();
+            return new ArrayList<>();
+        }
+    }
+
+    // Bean -> Model (Per WorkoutExercise) - VERSIONE SICURA
+    private WorkoutExercise toModelWorkoutExercise(WorkoutExerciseBean b) {
         if (b == null) return null;
 
-        // CORREZIONE: Chiamo il DAO aspettandomi un OGGETTO SINGOLO (non una lista)
-        Exercise definition = exerciseDAO.findByName(b.getExerciseName());
-
-        // Controllo se è null (cioè se non è stato trovato)
-        if (definition == null) {
-            throw new IllegalStateException("Esercizio non trovato nel database: " + b.getExerciseName());
+        // Recuperiamo il gruppo muscolare dal Bean, o mettiamo CHEST se manca
+        MuscleGroup mg = MuscleGroup.CHEST;
+        try {
+            if (b.getMuscleGroup() != null) {
+                mg = MuscleGroup.valueOf(b.getMuscleGroup());
+            }
+        } catch (Exception e) {
+            // Ignora errore di conversione
         }
 
-        // Creo l'oggetto usando la definizione trovata
+        // CREIAMO UN NUOVO OGGETTO AL VOLO (Senza cercarlo nel DB)
+        // ID 0 dice al DAO: "Sono nuovo, salvami tu se non esisto"
+        Exercise definition = new Exercise(
+                0,
+                b.getExerciseName(),
+                "Importato da API",
+                mg
+        );
+
         return new WorkoutExercise(definition, b.getSets(), b.getReps(), b.getRestTime());
     }
 
@@ -157,6 +191,22 @@ public class PlanManagerController implements Controller {
         }
 
         return plan;
+    }
+
+    // --- METODO NUOVO PER LA RICERCA ---
+    public List<ExerciseBean> searchExercisesOnApi(String keyword) {
+        try {
+            // Chiama il metodo search del DAO (che abbiamo creato prima)
+            List<Exercise> results = exerciseDAO.search(keyword);
+
+            // Converte i risultati in Bean per la grafica
+            return results.stream()
+                    .map(this::toExerciseBean)
+                    .collect(Collectors.toList());
+        } catch (Exception e) {
+            e.printStackTrace();
+            return new java.util.ArrayList<>(); // Ritorna lista vuota se fallisce
+        }
     }
 
 

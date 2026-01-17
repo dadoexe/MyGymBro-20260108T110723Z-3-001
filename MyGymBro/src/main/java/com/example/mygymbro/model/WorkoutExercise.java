@@ -2,6 +2,8 @@ package com.example.mygymbro.model;
 
 import com.example.mygymbro.bean.WorkoutPlanBean;
 
+import java.util.List;
+
 /**
  * Questa classe rappresenta un esercizio all'interno di una scheda specifica.
  * Contiene i parametri di esecuzione (serie, ripetizioni, recupero)
@@ -15,6 +17,7 @@ public class WorkoutExercise {
     private Exercise exercise;
     // Associazione con l'oggetto Exercise (il "catalogo")
     private Exercise exerciseDefinition;
+
 
     // Costruttore Vuoto
     public WorkoutExercise() {

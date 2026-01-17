@@ -9,4 +9,5 @@ public interface ExerciseDAO {
 
     Exercise findByName(String name) throws SQLException;
     List<Exercise> findAll()  throws SQLException;
+    List<Exercise> search(String keyword);
 }
