@@ -121,17 +121,6 @@ public class GraphicAthleteView implements AthleteView, GraphicView {
         }
     }
 
-
-    public void showMessage(String message) {
-        // Usiamo un Alert grafico invece del System.out
-        Alert alert = new Alert(Alert.AlertType.INFORMATION);
-        alert.setTitle("Info");
-        alert.setHeaderText(null);
-        alert.setContentText(message);
-        alert.showAndWait();
-    }
-
-
     // Aggiungi una lista locale per tenere traccia dei dati veri
     private List<WorkoutPlanBean> localCache;
 
@@ -157,36 +146,31 @@ public class GraphicAthleteView implements AthleteView, GraphicView {
 
 
     @FXML
-    public void handleDeletePlan() {
-        // 1. Prendo l'elemento selezionato dalla grafica
-        int selectedIndex = listWorkouts.getSelectionModel().getSelectedIndex();
+    public void handleDeletePlan(ActionEvent event) {
+        // CORREZIONE: Usa 'listWorkoutPlans' invece di 'listWorkouts'
+        WorkoutPlanBean selected = listWorkoutPlans.getSelectionModel().getSelectedItem();
 
-        // Controllo se ho una lista locale di bean (localCache) popolata in showWorkoutPlans
-        if (selectedIndex >= 0 && localCache != null && selectedIndex < localCache.size()) {
-            WorkoutPlanBean selectedPlan = localCache.get(selectedIndex);
-
-            // 2. Chiamo il CONTROLLER (Listener)
+        if (selected != null) {
             if (listener != null) {
-                listener.deletePlan(selectedPlan);
+                listener.deletePlan(selected);
             }
         } else {
-            showError("Seleziona una scheda da eliminare!");
+            System.out.println("Nessuna scheda selezionata per l'eliminazione.");
         }
     }
 
     @FXML
-    public void handleEditPlan() {
-        int selectedIndex = listWorkouts.getSelectionModel().getSelectedIndex();
+    public void handleEditPlan(ActionEvent event) {
+        // CORREZIONE: Usa 'listWorkoutPlans' invece di 'listWorkouts'
+        WorkoutPlanBean selected = listWorkoutPlans.getSelectionModel().getSelectedItem();
 
-        if (selectedIndex >= 0 && localCache != null && selectedIndex < localCache.size()) {
-            WorkoutPlanBean selectedPlan = localCache.get(selectedIndex);
-
-            // 2. Chiamo il CONTROLLER
+        if (selected != null) {
             if (listener != null) {
-                listener.modifyPlan(selectedPlan);
+                listener.modifyPlan(selected);
             }
         } else {
-            showError("Seleziona una scheda da modificare!");
+            // Opzionale: Mostra errore "Seleziona una scheda!"
+            System.out.println("Nessuna scheda selezionata.");
         }
     }
 
