@@ -12,19 +12,26 @@
     <padding><Insets top="20" right="20" bottom="20" left="20"/></padding>
 
     <Label text="Crea Nuova Scheda" styleClass="header-label"/>
-
-    <TextField fx:id="txtPlanName" promptText="Nome della Scheda (es. Ipertrofia)" maxWidth="400"/>
+    <HBox spacing="15" alignment="CENTER_LEFT">
+    <TextField fx:id="txtPlanName" promptText="Nome Scheda..." />
     <TextArea fx:id="txtComment" promptText="Commenti..." maxWidth="400" prefHeight="50"/>
+        <Label fx:id="lblTotalTime" text="Durata stimata: 0 min" styleClass="time-label" />
 
+    </HBox>
     <Separator/>
 
-    <HBox spacing="10" alignment="CENTER">
-        <TextField fx:id="txtSearchExercise" promptText="Cerca esercizio..." prefWidth="200" />
-        <ComboBox fx:id="comboExercises" promptText="Seleziona Esercizio" prefWidth="200"/>
-        <TextField fx:id="txtSets" promptText="Sets" prefWidth="50"/>
-        <TextField fx:id="txtReps" promptText="Reps" prefWidth="50"/>
-        <TextField fx:id="txtRest" promptText="Rest (sec)" prefWidth="70"/>
-        <Button text="Aggiungi" onAction="#onAddExercise"/>
+    <HBox spacing="10" alignment="CENTER_LEFT"> <TextField fx:id="txtSearchExercise" promptText="Cerca esercizio..." prefWidth="200.0" />
+
+        <ComboBox fx:id="comboExercises" promptText="Seleziona Esercizio" prefWidth="250.0" />
+
+        <TextField fx:id="txtSets" promptText="Sets" prefWidth="70.0" alignment="CENTER"/>
+
+        <TextField fx:id="txtReps" promptText="Reps" prefWidth="70.0" alignment="CENTER"/>
+
+        <TextField fx:id="txtRest" promptText="Rest" prefWidth="80.0" alignment="CENTER"/>
+
+        <Button text="Aggiungi" onAction="#onAddExercise" styleClass="button"/>
+
     </HBox>
 
     <TableView fx:id="tableExercises" maxWidth="600" prefHeight="200">

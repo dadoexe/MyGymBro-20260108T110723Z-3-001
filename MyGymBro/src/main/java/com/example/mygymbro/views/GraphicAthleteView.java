@@ -4,19 +4,26 @@ import com.example.mygymbro.bean.WorkoutPlanBean;
 import com.example.mygymbro.controller.NavigationController;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
+import javafx.scene.Parent;
 import javafx.scene.control.Alert;
 import javafx.scene.control.Label;
 import javafx.scene.control.ListView;
 import java.util.List;
 
-public class GraphicAthleteView implements AthleteView {
+public class GraphicAthleteView implements AthleteView, GraphicView {
 
     @FXML private Label lblWelcome;      // Label di benvenuto
     @FXML private Label lblInfo;         // Label per messaggi (es. "Nessuna scheda")
     @FXML private ListView<String> listWorkouts; // La lista grafica delle schede
 
     private NavigationController listener;
-
+    private Parent root;
+    @FXML
+    private Label lblTotalPlans;
+    @FXML
+    private Label lblLastActivity;
+    @FXML
+    private ListView<WorkoutPlanBean> listWorkoutPlans;
     /**
      * Metodo chiamato automaticamente da JavaFX dopo il caricamento dell'FXML.
      * Utile per pulire l'interfaccia all'avvio.
@@ -60,7 +67,7 @@ public class GraphicAthleteView implements AthleteView {
     @FXML
     public void handleLogout(ActionEvent actionEvent) {
         if (listener != null) {
-            listener.handleLogout();
+            listener.logout();
         }
 
     }
@@ -68,10 +75,11 @@ public class GraphicAthleteView implements AthleteView {
     // --- IMPLEMENTAZIONE METODI DELL'INTERFACCIA ---
 
     @Override
-    public void setWelcomeMessage(String msg) {
+    public void updateWelcomeMessage(String msg) {
         if (lblWelcome != null) {
-            lblWelcome.setText(msg);
+            lblWelcome.setText("Benvenuto " + msg + "!");
         }
+
     }
 
     @Override
@@ -86,9 +94,31 @@ public class GraphicAthleteView implements AthleteView {
 
     @Override
     public void updateWorkoutList(List<WorkoutPlanBean> workoutPlans) {
-        // Spesso updateWorkoutList e showWorkoutPlans fanno la stessa cosa
-        // Deleghiamo tutto a showWorkoutPlans per non duplicare codice.
-        showWorkoutPlans(workoutPlans);
+        // 1. Aggiorna la lista (CON PROTEZIONE NULL)
+        if (listWorkoutPlans != null) {
+            listWorkoutPlans.getItems().clear();
+            listWorkoutPlans.getItems().addAll(workoutPlans);
+        }
+
+        // 2. Aggiorna le Statistiche (CON PROTEZIONE NULL)
+        if (lblTotalPlans != null) {
+            lblTotalPlans.setText(String.valueOf(workoutPlans.size()));
+        }
+
+        if (lblLastActivity != null) {
+            if (!workoutPlans.isEmpty()) {
+                // Prendiamo l'ultima scheda (o la prima, dipende dall'ordinamento)
+                WorkoutPlanBean last = workoutPlans.get(workoutPlans.size() - 1);
+
+                // Formattazione data semplice
+                java.text.SimpleDateFormat sdf = new java.text.SimpleDateFormat("dd/MM/yyyy");
+                String dateStr = (last.getCreationDate() != null) ? sdf.format(last.getCreationDate()) : "Recente";
+
+                lblLastActivity.setText(dateStr);
+            } else {
+                lblLastActivity.setText("--");
+            }
+        }
     }
 
 
@@ -137,7 +167,7 @@ public class GraphicAthleteView implements AthleteView {
 
             // 2. Chiamo il CONTROLLER (Listener)
             if (listener != null) {
-                listener.handleDeletePlan(selectedPlan);
+                listener.deletePlan(selectedPlan);
             }
         } else {
             showError("Seleziona una scheda da eliminare!");
@@ -153,7 +183,7 @@ public class GraphicAthleteView implements AthleteView {
 
             // 2. Chiamo il CONTROLLER
             if (listener != null) {
-                listener.handleEditPlan(selectedPlan);
+                listener.modifyPlan(selectedPlan);
             }
         } else {
             showError("Seleziona una scheda da modificare!");
@@ -183,5 +213,15 @@ public class GraphicAthleteView implements AthleteView {
     @Override
     public void close() {
         // In JavaFX il close è gestito dallo Stage.
+    }
+
+    @Override
+    public Parent getRoot() {
+        return root;
+    }
+
+    @Override
+    public void setRoot(Parent root) {
+        this.root = root;
     }
 }

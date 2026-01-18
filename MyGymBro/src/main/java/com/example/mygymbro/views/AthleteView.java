@@ -9,7 +9,7 @@ public interface AthleteView extends View{
 
     void setListener(NavigationController controller);
     void updateWorkoutList(List<WorkoutPlanBean> workoutPlans);
-    void setWelcomeMessage(String msg);
+    void updateWelcomeMessage(String msg);
     void showWorkoutPlans(List<WorkoutPlanBean> plans);
     void showNoPlansMessage();
 

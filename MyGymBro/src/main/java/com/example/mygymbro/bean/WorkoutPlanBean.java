@@ -34,4 +34,16 @@ public class WorkoutPlanBean {
     public void addExerciseBean(WorkoutExerciseBean exerciseBean) {
         this.exerciseList.add(exerciseBean);
     }
+    @Override
+    public String toString() {
+        // Se c'è una data, la formattiamo carina, altrimenti mostriamo solo il nome
+        String dataStr = "";
+        if (this.creationDate != null) {
+            java.text.SimpleDateFormat sdf = new java.text.SimpleDateFormat("dd/MM/yyyy");
+            dataStr = " (" + sdf.format(this.creationDate) + ")";
+        }
+
+        // Questo è ciò che apparirà scritto nella riga della lista!
+        return this.name + dataStr;
+    }
 }

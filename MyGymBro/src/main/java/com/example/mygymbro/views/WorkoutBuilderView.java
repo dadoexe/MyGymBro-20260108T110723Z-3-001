@@ -28,4 +28,6 @@ public interface WorkoutBuilderView extends View{
      void showError(String message);
 
     String getComment();
+    void updateTotalTime(String timeMessage);
 }
+

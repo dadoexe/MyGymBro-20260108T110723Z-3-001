@@ -1,20 +1,23 @@
 package com.example.mygymbro.controller;
 
 import com.example.mygymbro.bean.WorkoutPlanBean;
-import com.example.mygymbro.views.LoginView;
-import com.example.mygymbro.views.AthleteView;
-import com.example.mygymbro.views.WorkoutBuilderView;
+import com.example.mygymbro.views.*;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
 import javafx.stage.Stage;
 import java.io.IOException;
+import com.example.mygymbro.views.GraphicView;
 
 public final class ApplicationController implements Controller {//singleton
 
     //static variable reference of istance
     private static ApplicationController instance = null;
-    boolean isGraphicMode = true; // O false se lanci da terminale
+    boolean isGraphicMode; // O false se lanci da terminale
+
+    private ViewFactory viewFactory; // LA NOSTRA NUOVA FACTORY!
+    private Stage mainStage;         // Usato SOLO in modalità grafica
+
     //private contructor restricted to this class
     private ApplicationController() {
     }
@@ -27,88 +30,96 @@ public final class ApplicationController implements Controller {//singleton
 
     }
 
-    // --- 2. GESTIONE DELLO STAGE E DEL CONTROLLER ATTUALE ---
-    private Stage mainStage;
+    // --- 2. GESTIONE DEL CONTROLLER ATTUALE ---
     private Controller currentController; // L'interfaccia generica che abbiamo creato
 
+    public void configure(boolean isGraphic, Stage stage) {
+        this.isGraphicMode = isGraphic;
+        this.mainStage = stage; // Sarà null se siamo in CLI, ma va bene!
 
-    public void start(Stage primaryStage) {
-        this.mainStage = primaryStage;
-        //carichiamo la prima schermata
-        loadLogin();
-        this.mainStage.show();
+        // Inizializza la Factory corretta
+        if (isGraphic) {
+            this.viewFactory = new com.example.mygymbro.views.GraphicViewFactory();
+        } else {
+            this.viewFactory = new com.example.mygymbro.views.CliViewFactory();
+        }
+    }
+
+    // Avvio dell'applicazione
+    public void start() {
+        loadLogin(); // Carica la prima schermata
     }
 
     //METODI DI NAVIGAZIONE
     public void loadLogin() {
-        try {
-            if (currentController != null) {
-                currentController.dispose();
+        if (currentController != null) currentController.dispose();
+
+        // 1. CHIEDIAMO ALLA FACTORY (Polimorfismo)
+        // Se siamo in GUI, ci dà GraphicLoginView. Se siamo in CLI, ci dà CliLoginView.
+        LoginView view = viewFactory.createLoginView();
+
+        // 2. SETUP CONTROLLER (Identico per entrambi)
+        LoginController controller = new LoginController(view);
+        view.setListener(controller);
+        this.currentController = controller;
+
+        // 3. MOSTRARE LA VISTA (Qui dobbiamo gestire la differenza di "contenitore")
+        renderView(view);
+    }
+
+    private void renderView(Object viewObject) {
+        if (isGraphicMode) {
+            // --- LOGICA JAVAFX ---
+            // Se è una vista grafica, recuperiamo il nodo radice e lo mostriamo
+            if (viewObject instanceof GraphicView) {
+                Parent root = ((GraphicView) viewObject).getRoot();
+
+                if (root != null) {
+                    Scene scene = new Scene(root);
+                    // Opzionale: mainStage.setTitle(...) se vuoi gestirlo qui
+                    mainStage.setScene(scene);
+                    mainStage.show();
+                } else {
+                    System.err.println("Errore: La vista grafica non ha un contenuto (root è null). Controlla GraphicViewFactory.");
+                }
             }
-
-            LoginView view = null;
-
-            if (isGraphicMode) {
-                // --- MODALITÀ GRAFICA (JavaFX) ---
-                FXMLLoader loader = new FXMLLoader(getClass().getResource("/com/example/mygymbro/view/view/schermataLogin.fxml"));
-                Parent root = loader.load();
-                view = loader.getController(); // Restituisce GraphicLoginView (che implementa LoginView)
-
-                // Impostiamo la scena
-                mainStage.setTitle("MyGymBro - Login");
-                mainStage.setScene(new Scene(root));
-                mainStage.show();
-            } /*else {
-                // --- MODALITÀ CLI (Console) ---
-                view = new CliLoginView(); // Restituisce CliLoginView (che implementa LoginView)
-                // (Opzionale) Se la CLI ha bisogno di pulire lo schermo o stampare un header iniziale
-                // ((CliLoginView) view).init();
-            }*/
-
-            // --- COMUNE A ENTRAMBI ---
-            // Il LoginController accetta l'interfaccia 'LoginView', quindi funziona con entrambe
-            LoginController controller = new LoginController(view);
-            view.setListener(controller);
-
-            this.currentController = controller;
-
-        } catch (IOException e) {
-            e.printStackTrace();
+        } else {
+            // --- LOGICA CLI ---
+            // Se è una vista testuale, chiamiamo semplicemente show()
+            // Usiamo l'interfaccia base 'View' invece di 'CliView'
+            if (viewObject instanceof View) {
+                ((View) viewObject).show();
+            }
         }
     }
 
 
     public void loadHome() {
-        // Ipotizziamo di avere un flag impostato all'avvio dell'app
+        // 1. Pulizia del controller precedente
+        if (currentController != null) {
+            currentController.dispose();
+        }
 
+        // 2. CREAZIONE VISTA TRAMITE FACTORY (Il pezzo che mancava!)
+        // La factory deciderà se creare GraphicAthleteView o CliAthleteView
+        AthleteView view = viewFactory.createAthleteView();
 
-        AthleteView view = null;
+        // Controllo di sicurezza
+        if (view == null) {
+            System.err.println("ERRORE CRITICO: La factory ha restituito una view NULL per loadHome!");
+            return;
+        }
 
-        if (isGraphicMode) {
-            // --- STRADA GUI (Quella che hai ora) ---
-            try {
-                FXMLLoader loader = new FXMLLoader(getClass().getResource("/com/example/mygymbro/view/view/mainpage.fxml"));
-                Parent root = loader.load();
-                view = loader.getController(); // Torna GraphicAthleteView
-
-                mainStage.setScene(new Scene(root));
-                mainStage.show();
-            } catch (IOException e) { e.printStackTrace(); }
-
-        }/* else {
-            // --- STRADA CLI (Nuova) ---
-            // Qui NON usi FXMLLoader, istanzi semplicemente la classe
-            view = new CliAthleteView();
-            // Nota: La CLI non ha uno "Stage" o una "Scene", vive nella console
-            ((CliAthleteView) view).start(); // Metodo ipotetico per avviare il loop della CLI
-        }*/
-
-        // --- DA QUI IN POI È UGUALE PER TUTTI ---
-        // Il Controller non sa se 'view' è Graphic o Cli, e non gliene frega niente!
+        // 3. Setup del Controller
         NavigationController controller = new NavigationController(view);
-        assert view != null;
         view.setListener(controller);
-        controller.loadDashboardData(); // Riempie la view (qualunque essa sia)
+        this.currentController = controller;
+
+        // 4. Caricamento dati iniziali (Dashboard)
+        controller.loadDashboardData();
+
+        // 5. Mostra a video (Render)
+        renderView(view);
     }
 
 
@@ -121,55 +132,40 @@ public final class ApplicationController implements Controller {//singleton
     // --- VERSIONE 2: MODIFICA O CREAZIONE (Logica Principale) ---
     public void loadWorkoutBuilder(WorkoutPlanBean planToEdit) {
         try {
+            // 1. Pulizia
             if (currentController != null) {
                 currentController.dispose();
             }
 
-            WorkoutBuilderView view = null;
+            // 2. CREAZIONE VISTA TRAMITE FACTORY (Il fix è qui!)
+            WorkoutBuilderView view = viewFactory.createWorkoutBuilderView();
 
-            if (isGraphicMode) {
-                // --- MODALITÀ GRAFICA (GUI) ---
-                // Nota: Controlla bene che il path sia corretto! (una sola cartella 'view' o due?)
-                FXMLLoader loader = new FXMLLoader(getClass().getResource("/com/example/mygymbro/view/view/workout_builder.fxml"));
-                Parent root = loader.load();
-                view = loader.getController(); // Restituisce GraphicWorkoutBuilderView
-
-                // Cambiamo dinamicamente il titolo della finestra
-                String title = (planToEdit == null) ? "MyGymBro - Nuova Scheda" : "MyGymBro - Modifica Scheda";
-                mainStage.setTitle(title);
-                mainStage.setScene(new Scene(root));
-                mainStage.show();
-
-            } else {
-                // --- MODALITÀ CLI (Command Line) ---
-                // Qui useresti la Factory o il costruttore diretto della CLI
-                // view = new CliWorkoutBuilderView();
+            if (view == null) {
+                System.err.println("ERRORE CRITICO: La factory ha restituito NULL per WorkoutBuilderView!");
+                return;
             }
 
-            // --- GESTIONE DEL CONTROLLER (Logica Comune) ---
+            // 3. Setup Controller
             PlanManagerController controller;
-
             if (planToEdit == null) {
-                // CASO A: NUOVA SCHEDA -> Usiamo il costruttore base
+                // CASO A: NUOVA SCHEDA
                 controller = new PlanManagerController(view);
             } else {
-                // CASO B: MODIFICA -> Usiamo il costruttore che accetta il Bean
-                // Questo riempirà automaticamente i campi della vista (GUI o CLI) con i dati vecchi
+                // CASO B: MODIFICA SCHEDA
                 controller = new PlanManagerController(view, planToEdit);
             }
 
             view.setListener(controller);
             this.currentController = controller;
 
-            // Se fossimo in CLI, qui potremmo dover avviare il loop di input:
-            // if (!isGraphicMode) ((CliWorkoutBuilderView)view).start();
+            // 4. Mostra a video (Render)
+            renderView(view);
 
         } catch (Exception e) {
             e.printStackTrace();
             System.err.println("Errore nel caricamento del WorkoutBuilder: " + e.getMessage());
         }
     }
-
 
     public void logout() {
         // Pulisco la sessione

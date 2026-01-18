@@ -86,7 +86,79 @@ public class PlanManagerController implements Controller {
         if (currentPlan == null) return;
         view.setPlanName(currentPlan.getName());
         view.setPlanComment(currentPlan.getComment());
-        view.updateExerciseTable(currentPlan.getExerciseList());
+        if (currentPlan.getExerciseList() != null) {
+        view.updateExerciseTable(currentPlan.getExerciseList());}
+
+        calculateDuration();
+    }
+    public void addExerciseToPlan(WorkoutExerciseBean newExercise) {
+        try {
+            // 1. Validazione base
+            if (newExercise == null) {
+                view.showError("Dati esercizio non validi.");
+                return;
+            }
+
+            // 2. Inizializza la lista se è null (difensiva)
+            if (currentPlan.getExerciseList() == null) {
+                currentPlan.setExerciseList(new java.util.ArrayList<>());
+            }
+
+            // 3. Aggiungi alla lista del Bean
+            currentPlan.getExerciseList().add(newExercise);
+            System.out.println("DEBUG: Esercizio aggiunto al piano: " + newExercise.getExerciseName());
+
+            // 4. Aggiorna la vista (la tabella deve mostrare il nuovo esercizio)
+            view.updateExerciseTable(currentPlan.getExerciseList());
+
+            // 5. CALCOLA LA NUOVA DURATA (Feature Smart!) ⏱️
+            calculateDuration();
+
+        } catch (Exception e) {
+            e.printStackTrace();
+            view.showError("Errore nell'aggiunta dell'esercizio: " + e.getMessage());
+        }
+    }
+
+    // --- CALCOLO SMART DELLA DURATA ---
+    private void calculateDuration() {
+        int totalSeconds = 0;
+
+        // Recuperiamo la lista degli esercizi attualmente aggiunti
+        // Nota: Assicurati che 'currentPlan' o la lista locale sia aggiornata
+        if (currentPlan == null || currentPlan.getExerciseList() == null) return;
+
+        for (WorkoutExerciseBean ex : currentPlan.getExerciseList()) {
+            // 1. Tempo di esecuzione attivo (TUT stimato: 4 secondi a ripetizione)
+            int activeTime = ex.getSets() * ex.getReps() * 4;
+
+            // 2. Tempo di recupero (Sets * Recupero)
+            // Se fai 4 set, riposi 3 volte tra i set + 1 volta alla fine o cambio esercizio
+            int restTime = ex.getSets() * ex.getRestTime();
+
+            // 3. Tempo di cambio attrezzo (fisso 60 secondi tra esercizi)
+            totalSeconds += activeTime + restTime + 60;
+        }
+
+        // Convertiamo in minuti
+        int minutes = totalSeconds / 60;
+
+        // Aggiorniamo la vista
+        view.updateTotalTime("Durata stimata: ~" + minutes + " min");
+    }
+    // In PlanManagerController.java
+
+    public void removeExerciseFromPlan(WorkoutExerciseBean exerciseToRemove) {
+        if (currentPlan != null && currentPlan.getExerciseList() != null) {
+            // 1. Rimuovi dalla lista logica del Controller
+            currentPlan.getExerciseList().remove(exerciseToRemove);
+
+            // 2. Aggiorna la vista (così la riga sparisce anche graficamente)
+            view.updateExerciseTable(currentPlan.getExerciseList());
+
+            // 3. Ricalcola il tempo (Ecco perché lo facciamo passare da qui!)
+            calculateDuration();
+        }
     }
 
 

@@ -2,13 +2,14 @@ package com.example.mygymbro.views;
 
 import com.example.mygymbro.controller.LoginController;
 import javafx.fxml.FXML;
+import javafx.scene.Parent;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
 import javafx.scene.control.PasswordField;
 import javafx.scene.control.TextField;
 
 
-public class GraphicLoginView implements LoginView {
+public class GraphicLoginView implements LoginView, GraphicView {
     @FXML
     private TextField txtUsername;
 
@@ -22,6 +23,7 @@ public class GraphicLoginView implements LoginView {
     private Label lblError;
 
     private LoginController listener;;
+    private Parent root;
 
 
     @FXML
@@ -44,7 +46,7 @@ public class GraphicLoginView implements LoginView {
             System.out.println("ERRORE GRAVISSIMO: Il listener è NULL. Il controller non è collegato!");
         } else {
             System.out.println("2. VIEW: Sto chiamando il controller..."); // <--- SPIA 2
-            listener.validateLogin(getUsername(), getPassword());
+            listener.checkLogin();
         }
     }
 
@@ -96,5 +98,15 @@ public class GraphicLoginView implements LoginView {
     @Override
     public void showMessage() {
 
+    }
+
+    @Override
+    public Parent getRoot() {
+        return root;
+    }
+
+    @Override
+    public void setRoot(Parent root) {
+        this.root = root;
     }
 }

@@ -5,6 +5,7 @@ import com.example.mygymbro.bean.WorkoutExerciseBean;
 import com.example.mygymbro.controller.PlanManagerController;
 import javafx.collections.FXCollections;
 import javafx.fxml.FXML;
+import javafx.scene.Parent;
 import javafx.scene.control.*;
 import javafx.scene.control.cell.PropertyValueFactory;
 import javafx.scene.control.cell.TextFieldTableCell;
@@ -15,7 +16,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
-public class GraphicWorkoutBuilderView implements WorkoutBuilderView {
+public class GraphicWorkoutBuilderView implements WorkoutBuilderView, GraphicView {
 
     @FXML private TextField txtPlanName;
     @FXML private TextArea txtComment;
@@ -24,6 +25,8 @@ public class GraphicWorkoutBuilderView implements WorkoutBuilderView {
     @FXML private TableView<WorkoutExerciseBean> tableExercises;
     @FXML private TextField txtSearchExercise;
     private List<ExerciseBean> allExercisesCache = new ArrayList<>();
+    private javafx.scene.Parent root;
+    @FXML private Label lblTotalTime;
 
     // Colonne Tabella
     @FXML private TableColumn<WorkoutExerciseBean, String> colName;
@@ -81,11 +84,18 @@ public class GraphicWorkoutBuilderView implements WorkoutBuilderView {
 
                     {
                         btn.setStyle("-fx-background-color: #FF5252; -fx-text-fill: white; -fx-font-weight: bold; -fx-cursor: hand;");
+
+                        // --- MODIFICA QUI ---
                         btn.setOnAction(event -> {
-                            // Logica di eliminazione
+                            // Recupera l'oggetto della riga
                             WorkoutExerciseBean exercise = getTableView().getItems().get(getIndex());
-                            getTableView().getItems().remove(exercise);
+
+                            // Chiama il controller per rimuovere, aggiornare la lista e ricalcolare il tempo
+                            if (listener != null) {
+                                listener.removeExerciseFromPlan(exercise);
+                            }
                         });
+                        // --------------------
                     }
 
                     @Override
@@ -176,7 +186,7 @@ public class GraphicWorkoutBuilderView implements WorkoutBuilderView {
 
     @FXML
     public void onAddExercise() {
-        // 1. Recuperiamo i dati dai campi
+        // 1. Recuperiamo i dati dai campi (Questo va bene, è compito della View)
         ExerciseBean selected = comboExercises.getValue();
         if (selected == null) {
             showError("Seleziona un esercizio!");
@@ -190,19 +200,20 @@ public class GraphicWorkoutBuilderView implements WorkoutBuilderView {
 
             // 2. Creiamo il Bean della riga
             WorkoutExerciseBean row = new WorkoutExerciseBean();
-
             row.setExerciseName(selected.getName());
             row.setMuscleGroup(selected.getMuscleGroup());
             row.setSets(sets);
             row.setReps(reps);
             row.setRestTime(rest);
 
-            // 3. Aggiungiamo alla tabella grafica
-            tableExercises.getItems().add(row);
+            if (listener != null) {
+                listener.addExerciseToPlan(row); // ✅ Il Controller aggiunge, calcola il tempo e ci dice di aggiornare
+            }
 
-            // 4. Aggiorniamo anche il Bean nel Controller
-            // Nota: Se il PlanManagerController usa la View per leggere i dati alla fine,
-            // basta esporre un metodo getExerciseList()
+            // Puliamo i campi dopo l'aggiunta per comodità
+            txtSets.clear();
+            txtReps.clear();
+            txtRest.clear();
 
         } catch (NumberFormatException e) {
             showError("Inserisci numeri validi per Sets, Reps e Rest.");
@@ -238,6 +249,19 @@ public class GraphicWorkoutBuilderView implements WorkoutBuilderView {
     public String getComment() {
         return txtComment.getText();
     }
+
+    @Override
+    public void updateTotalTime(String timeMessage) {
+        // Controllo di sicurezza: se l'FXML non è caricato bene, evita il crash
+        if (lblTotalTime != null) {
+            // JavaFX richiede che gli aggiornamenti grafici avvengano nel thread grafico
+            // (Di solito lo fa in automatico, ma Platform.runLater è una sicurezza in più)
+            javafx.application.Platform.runLater(() -> {
+                lblTotalTime.setText(timeMessage);
+            });
+        }
+    }
+
     public void setPlanComment(String comment) {
         this.txtComment.setText(comment);
     }
@@ -269,6 +293,7 @@ public class GraphicWorkoutBuilderView implements WorkoutBuilderView {
         Alert alert = new Alert(Alert.AlertType.ERROR, msg);
         alert.showAndWait();
     }
+
     // --- METODO MANCANTE RICHIESTO DALL'INTERFACCIA ---
     @Override
     public void updateExerciseTable(List<WorkoutExerciseBean> exercises) {
@@ -277,6 +302,7 @@ public class GraphicWorkoutBuilderView implements WorkoutBuilderView {
             tableExercises.setItems(FXCollections.observableArrayList(exercises));
         } else {
             tableExercises.getItems().clear();
+            tableExercises.getItems().addAll(exercises);
         }
     }
 
@@ -300,4 +326,15 @@ public class GraphicWorkoutBuilderView implements WorkoutBuilderView {
     public void showMessage() {
 
     }
+
+    @Override
+    public Parent getRoot() {
+        return root;
+    }
+
+    @Override
+    public void setRoot(Parent root) {
+        this.root = root;
+    }
+
 }
