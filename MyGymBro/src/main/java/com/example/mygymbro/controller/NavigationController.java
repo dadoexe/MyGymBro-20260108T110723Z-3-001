@@ -53,6 +53,7 @@ public class NavigationController implements Controller {
         } catch (Exception e) {
             e.printStackTrace();
             view.updateWorkoutList(new ArrayList<>());
+            view.showError("Impossibile caricare le schede.");
         }
     }
 
@@ -75,14 +76,14 @@ public class NavigationController implements Controller {
             // Se nel DAO si chiama deletePlan, cambia qui sotto.
             workoutPlanDAO.delete(planBean.getId());
 
-            System.out.println(">> Controller: Scheda eliminata (" + planBean.getName() + ")");
+            view.showSuccess("Scheda '" + planBean.getName() + "' eliminata.");
 
             // Ricarichiamo i dati aggiornati
             loadDashboardData();
 
         } catch (SQLException e) {
             e.printStackTrace();
-            System.err.println("Errore cancellazione: " + e.getMessage());
+            view.showError("Errore cancellazione: " + e.getMessage());
         }
     }
 

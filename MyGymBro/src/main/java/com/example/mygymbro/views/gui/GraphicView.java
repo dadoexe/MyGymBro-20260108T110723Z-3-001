@@ -1,4 +1,4 @@
-package com.example.mygymbro.views;
+package com.example.mygymbro.views.gui;
 
 import javafx.scene.Parent;
 

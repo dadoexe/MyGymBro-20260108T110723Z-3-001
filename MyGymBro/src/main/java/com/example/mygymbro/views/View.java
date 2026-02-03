@@ -1,8 +1,9 @@
 package com.example.mygymbro.views;
 
 public interface View {
-    void show();
-    void close();
-    void showMessage();
+    // Unico metodo per mostrare messaggi di successo/info (es. "Salvataggio ok")
+    void showSuccess(String message);
 
+    // Unico metodo per mostrare errori (es. "Campo obbligatorio")
+    void showError(String message);
 }

@@ -1,8 +1,11 @@
-package com.example.mygymbro.views;
+package com.example.mygymbro.views.gui;
 
 import com.example.mygymbro.bean.ExerciseBean;
 import com.example.mygymbro.bean.WorkoutExerciseBean;
+import com.example.mygymbro.bean.WorkoutPlanBean;
 import com.example.mygymbro.controller.PlanManagerController;
+import com.example.mygymbro.views.WorkoutBuilderView;
+import javafx.application.Platform;
 import javafx.collections.FXCollections;
 import javafx.fxml.FXML;
 import javafx.scene.Parent;
@@ -24,8 +27,6 @@ public class GraphicWorkoutBuilderView implements WorkoutBuilderView, GraphicVie
     @FXML private TextField txtSets, txtReps, txtRest;
     @FXML private TableView<WorkoutExerciseBean> tableExercises;
     @FXML private TextField txtSearchExercise;
-    private List<ExerciseBean> allExercisesCache = new ArrayList<>();
-    private javafx.scene.Parent root;
     @FXML private Label lblTotalTime;
 
     // Colonne Tabella
@@ -35,14 +36,17 @@ public class GraphicWorkoutBuilderView implements WorkoutBuilderView, GraphicVie
     @FXML private TableColumn<WorkoutExerciseBean, Integer> colRest;
     @FXML private TableColumn<WorkoutExerciseBean, String> colMuscle;
     @FXML private TableColumn<WorkoutExerciseBean, Void> colDelete;
+
     private PlanManagerController listener;
+    private List<ExerciseBean> allExercisesCache = new ArrayList<>();
+    private Parent root;
 
     @FXML
     public void initialize() {
         // 1. Rendi la tabella editabile
         tableExercises.setEditable(true);
 
-        // ... configurazione colName e colMuscle (che non sono editabili) ...
+        // Configurazione Colonne
         colName.setCellValueFactory(new PropertyValueFactory<>("exerciseName"));
         colMuscle.setCellValueFactory(new PropertyValueFactory<>("muscleGroup"));
 
@@ -70,42 +74,36 @@ public class GraphicWorkoutBuilderView implements WorkoutBuilderView, GraphicVie
             row.setRestTime(event.getNewValue());
         });
 
-        // 4.B FILTRO RICERCA ESERCIZI
-        txtSearchExercise.textProperty().addListener((observable, oldValue, newValue) -> {
-            performLiveSearch(newValue);
-        });
+        // 5. FILTRO RICERCA ESERCIZI
+        if (txtSearchExercise != null) {
+            txtSearchExercise.textProperty().addListener((observable, oldValue, newValue) -> {
+                performLiveSearch(newValue);
+            });
+        }
 
-        // 5. CONFIGURA COLONNA ELIMINA (Bottone X)
+        // 6. CONFIGURA COLONNA ELIMINA (Bottone X)
+        setupDeleteColumn();
+    }
+
+    private void setupDeleteColumn() {
         javafx.util.Callback<TableColumn<WorkoutExerciseBean, Void>, TableCell<WorkoutExerciseBean, Void>> cellFactory = new javafx.util.Callback<>() {
             @Override
             public TableCell<WorkoutExerciseBean, Void> call(final TableColumn<WorkoutExerciseBean, Void> param) {
                 return new TableCell<>() {
                     private final Button btn = new Button("X");
-
                     {
                         btn.setStyle("-fx-background-color: #FF5252; -fx-text-fill: white; -fx-font-weight: bold; -fx-cursor: hand;");
-
-                        // --- MODIFICA QUI ---
                         btn.setOnAction(event -> {
-                            // Recupera l'oggetto della riga
                             WorkoutExerciseBean exercise = getTableView().getItems().get(getIndex());
-
-                            // Chiama il controller per rimuovere, aggiornare la lista e ricalcolare il tempo
                             if (listener != null) {
                                 listener.removeExerciseFromPlan(exercise);
                             }
                         });
-                        // --------------------
                     }
-
                     @Override
                     public void updateItem(Void item, boolean empty) {
                         super.updateItem(item, empty);
-                        if (empty) {
-                            setGraphic(null);
-                        } else {
-                            setGraphic(btn);
-                        }
+                        setGraphic(empty ? null : btn);
                     }
                 };
             }
@@ -113,80 +111,24 @@ public class GraphicWorkoutBuilderView implements WorkoutBuilderView, GraphicVie
         colDelete.setCellFactory(cellFactory);
     }
 
+    // --- LOGICA DI RICERCA LIVE (API) ---
     private void performLiveSearch(String query) {
         if (listener == null) return;
-
-        // Creiamo un Thread separato per scaricare i dati senza bloccare l'interfaccia
         new Thread(() -> {
-
-            // 1. Scarica i dati (lento) in background
             List<ExerciseBean> results = listener.searchExercisesOnApi(query);
-
-            // 2. Aggiorna la grafica (veloce) nel thread principale
             javafx.application.Platform.runLater(() -> {
                 comboExercises.setItems(FXCollections.observableArrayList(results));
-
                 if (!results.isEmpty()) {
-                    comboExercises.show(); // Apre la tendina
+                    comboExercises.show();
                 }
             });
-
         }).start();
     }
 
-    @Override
-    public void setListener(PlanManagerController listener) {
-        this.listener = listener;
-    }
-
-    @Override
-    public void populateExerciseMenu(List<ExerciseBean> exercises) {
-        // 1. SALVIAMO I DATI NELLA CACHE (Fondamentale!)
-        this.allExercisesCache = exercises;
-        // Popoliamo il menu a tendina con i dati dell'API
-        comboExercises.setItems(FXCollections.observableArrayList(exercises));
-
-        // Questo serve a mostrare solo il nome dell'esercizio nel menu
-        comboExercises.setConverter(new StringConverter<>() {
-            @Override
-            public String toString(ExerciseBean object) {
-                return object != null ? object.getName() : "";
-            }
-            @Override
-            public ExerciseBean fromString(String string) {
-                return null; // Non ci serve
-            }
-        });
-        if (txtSearchExercise != null && !txtSearchExercise.getText().isEmpty()) {
-            filterExercises(txtSearchExercise.getText());
-        }
-    }
-
-    private void filterExercises(String searchText) {
-        // Se la ricerca è vuota, mostriamo TUTTO (recuperando dalla cache)
-        if (searchText == null || searchText.isEmpty()) {
-            comboExercises.setItems(FXCollections.observableArrayList(allExercisesCache));
-            return;
-        }
-
-        // Altrimenti filtriamo la lista
-        List<ExerciseBean> filteredList = allExercisesCache.stream()
-                .filter(exercise -> exercise.getName().toLowerCase().contains(searchText.toLowerCase()))
-                .collect(Collectors.toList());
-
-        comboExercises.setItems(FXCollections.observableArrayList(filteredList));
-
-        // Opzionale: apre la tendina automaticamente per far vedere i risultati
-        if (!filteredList.isEmpty()) {
-            comboExercises.show();
-        }
-    }
-
-    // --- AZIONI BOTTONI ---
+    // --- AZIONI BOTTONI FXML ---
 
     @FXML
     public void onAddExercise() {
-        // 1. Recuperiamo i dati dai campi (Questo va bene, è compito della View)
         ExerciseBean selected = comboExercises.getValue();
         if (selected == null) {
             showError("Seleziona un esercizio!");
@@ -198,7 +140,7 @@ public class GraphicWorkoutBuilderView implements WorkoutBuilderView, GraphicVie
             int reps = Integer.parseInt(txtReps.getText());
             int rest = Integer.parseInt(txtRest.getText());
 
-            // 2. Creiamo il Bean della riga
+            // Creiamo il Bean della riga
             WorkoutExerciseBean row = new WorkoutExerciseBean();
             row.setExerciseName(selected.getName());
             row.setMuscleGroup(selected.getMuscleGroup());
@@ -206,11 +148,12 @@ public class GraphicWorkoutBuilderView implements WorkoutBuilderView, GraphicVie
             row.setReps(reps);
             row.setRestTime(rest);
 
+            // Passiamo al Controller che calcolerà il tempo e aggiornerà la lista
             if (listener != null) {
-                listener.addExerciseToPlan(row); // ✅ Il Controller aggiunge, calcola il tempo e ci dice di aggiornare
+                listener.addExerciseToPlan(row);
             }
 
-            // Puliamo i campi dopo l'aggiunta per comodità
+            // Pulizia campi
             txtSets.clear();
             txtReps.clear();
             txtRest.clear();
@@ -222,110 +165,121 @@ public class GraphicWorkoutBuilderView implements WorkoutBuilderView, GraphicVie
 
     @FXML
     public void onSavePlan() {
-        if (listener != null) {
-            // Nota: Non passiamo argomenti, il controller legge dalla view
-            listener.handleSavePlan();
-        }
+        if (listener != null) listener.handleSavePlan();
     }
 
     @FXML
     public void onCancel() {
-        if (listener != null) {
-            listener.handleCancel(); // Chiama il metodo che abbiamo appena creato
-        }
+        if (listener != null) listener.handleCancel();
     }
 
-    // --- METODI DELL'INTERFACCIA WorkoutBuilderView ---
+    // --- IMPLEMENTAZIONE INTERFACCIA WorkoutBuilderView ---
+
+    @Override
+    public void setListener(PlanManagerController listener) {
+        this.listener = listener;
+    }
 
     @Override
     public String getPlanName() {
         return txtPlanName.getText();
     }
-    public void setPlanName(String planName) {
 
-        this.txtPlanName.setText(planName);
+    @Override
+    public void setPlanName(String name) {
+        this.txtPlanName.setText(name);
     }
 
+    @Override
     public String getComment() {
         return txtComment.getText();
     }
 
     @Override
-    public void updateTotalTime(String timeMessage) {
-        // Controllo di sicurezza: se l'FXML non è caricato bene, evita il crash
-        if (lblTotalTime != null) {
-            // JavaFX richiede che gli aggiornamenti grafici avvengano nel thread grafico
-            // (Di solito lo fa in automatico, ma Platform.runLater è una sicurezza in più)
-            javafx.application.Platform.runLater(() -> {
-                lblTotalTime.setText(timeMessage);
-            });
-        }
-    }
-
     public void setPlanComment(String comment) {
         this.txtComment.setText(comment);
     }
 
-    public void preloadData(String name, String description, List<WorkoutExerciseBean> exercises) {
-        this.txtPlanName.setText(name);
-        this.txtComment.setText(description);
-
-        // Convertiamo la lista in ObservableList per la tabella
-        if (exercises != null) {
-            this.tableExercises.setItems(FXCollections.observableArrayList(exercises));
-        }
-    }
-
-
-    public List<WorkoutExerciseBean> getAddedExercises() {
-        // Il controller chiamerà questo metodo per sapere cosa salvare
-        return tableExercises.getItems();
-    }
-
-
-    public void showMessage(String msg) {
-        Alert alert = new Alert(Alert.AlertType.INFORMATION, msg);
-        alert.showAndWait();
-    }
-
     @Override
-    public void showError(String msg) {
-        Alert alert = new Alert(Alert.AlertType.ERROR, msg);
-        alert.showAndWait();
+    public void populateExerciseMenu(List<ExerciseBean> exercises) {
+        this.allExercisesCache = exercises;
+        comboExercises.setItems(FXCollections.observableArrayList(exercises));
+
+        // Converter per mostrare solo il nome nella tendina
+        comboExercises.setConverter(new StringConverter<>() {
+            @Override
+            public String toString(ExerciseBean object) {
+                return object != null ? object.getName() : "";
+            }
+            @Override
+            public ExerciseBean fromString(String string) {
+                return null;
+            }
+        });
     }
 
-    // --- METODO MANCANTE RICHIESTO DALL'INTERFACCIA ---
     @Override
     public void updateExerciseTable(List<WorkoutExerciseBean> exercises) {
         if (exercises != null) {
-            // Converto la lista normale in una lista "osservabile" per JavaFX
             tableExercises.setItems(FXCollections.observableArrayList(exercises));
         } else {
             tableExercises.getItems().clear();
-            tableExercises.getItems().addAll(exercises);
         }
     }
 
-    // Metodi getter/setter opzionali richiesti dall'interfaccia
-    @Override public ExerciseBean getSelectedExercise() { return comboExercises.getValue(); }
-    @Override public String getSets() { return txtSets.getText(); }
-    public String getReps() { return txtReps.getText(); }
-   public String getRestTime() { return txtRest.getText(); }
-
     @Override
-    public void show() {
-
+    public void updateExerciseList(List<WorkoutExerciseBean> exercises) {
+        // Errore era: listExercises.getItems()... ma la tua tabella si chiama tableExercises!
+        Platform.runLater(() -> {
+            if (exercises != null) {
+                tableExercises.setItems(FXCollections.observableArrayList(exercises));
+            } else {
+                tableExercises.getItems().clear();
+            }
+        });
     }
 
     @Override
-    public void close() {
-
+    public WorkoutPlanBean getWorkoutPlanBean() {
+        WorkoutPlanBean bean = new WorkoutPlanBean();
+        bean.setName(txtPlanName.getText());
+        bean.setComment(txtComment.getText());
+        // Prende gli esercizi direttamente dalla tabella
+        bean.setExerciseList(new ArrayList<>(tableExercises.getItems()));
+        return bean;
     }
 
     @Override
-    public void showMessage() {
-
+    public List<WorkoutExerciseBean> getAddedExercises() {
+        return tableExercises.getItems();
     }
+
+    @Override
+    public void updateTotalTime(String timeMessage) {
+        if (lblTotalTime != null) {
+            javafx.application.Platform.runLater(() -> lblTotalTime.setText(timeMessage));
+        }
+    }
+
+    // --- IMPLEMENTAZIONE INTERFACCIA View (Messaggi) ---
+
+    @Override
+    public void showError(String msg) {
+        Alert alert = new Alert(Alert.AlertType.ERROR);
+        alert.setHeaderText("Errore");
+        alert.setContentText(msg);
+        alert.showAndWait();
+    }
+
+    @Override
+    public void showSuccess(String message) {
+        Alert alert = new Alert(Alert.AlertType.INFORMATION);
+        alert.setHeaderText("Successo");
+        alert.setContentText(message);
+        alert.showAndWait();
+    }
+
+    // --- IMPLEMENTAZIONE GraphicView ---
 
     @Override
     public Parent getRoot() {
@@ -336,5 +290,4 @@ public class GraphicWorkoutBuilderView implements WorkoutBuilderView, GraphicVie
     public void setRoot(Parent root) {
         this.root = root;
     }
-
 }

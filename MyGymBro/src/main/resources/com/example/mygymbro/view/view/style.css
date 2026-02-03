@@ -228,3 +228,32 @@
     -fx-background-color: #555;
     -fx-background-radius: 5;
 }
+/* --- TIMER BOX: Stato WORK (Esecuzione) --- */
+.timer-box-work {
+    -fx-background-color: #2B2B36; /* Grigio Scuro */
+    -fx-background-radius: 20;
+}
+
+.label-timer-work {
+    -fx-text-fill: white;
+}
+
+.label-status-work {
+    -fx-text-fill: #888888;
+    -fx-font-weight: bold;
+}
+
+/* --- TIMER BOX: Stato REST (Recupero) --- */
+.timer-box-rest {
+    -fx-background-color: #00E676; /* Verde Acceso */
+    -fx-background-radius: 20;
+}
+
+.label-timer-rest {
+    -fx-text-fill: #1E1E24; /* Testo Scuro per contrasto col verde */
+}
+
+.label-status-rest {
+    -fx-text-fill: #1E1E24;
+    -fx-font-weight: bold;
+}

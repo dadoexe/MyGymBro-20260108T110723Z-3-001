@@ -7,7 +7,6 @@ public class PersonalTrainerBean extends UserBean {
 
     private String certificationCode;
 
-    // NOTA: Qui usiamo AthleteBean, non l'entity Athlete!
     private List<AthleteBean> managedAthletes = new ArrayList<>();
 
     public PersonalTrainerBean() {

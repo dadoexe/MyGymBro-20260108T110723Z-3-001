@@ -2,22 +2,29 @@ package com.example.mygymbro;
 
 import com.example.mygymbro.controller.ApplicationController;
 import javafx.application.Application;
+import javafx.fxml.FXMLLoader;
+import javafx.scene.Scene;
 import javafx.stage.Stage;
+
+import java.io.IOException;
 
 public class Main extends Application {
 
 
     @Override
-    public void start(Stage primaryStage) {
-        // --- PUNTO DI INGRESSO JAVAFX (GRAFICA) ---
+    public void start(Stage stage) throws IOException {
+        // Percorso assoluto che corrisponde alla tua struttura cartelle
+        FXMLLoader fxmlLoader = new FXMLLoader(getClass().getResource("/com/example/mygymbro/view/view/launcher.fxml"));
 
-        ApplicationController app = ApplicationController.getInstance();
+        // Controllo di sicurezza (Opzionale ma utile per debug)
+        if (fxmlLoader.getLocation() == null) {
+            throw new IOException("ERRORE CRITICO: Non trovo il file launcher.fxml! Controlla il percorso in resources.");
+        }
 
-        // Configuriamo l'app in modalità GRAFICA (True) passando lo Stage
-        app.configure(true, primaryStage);
-
-        // Avviamo la navigazione
-        app.start();
+        Scene scene = new Scene(fxmlLoader.load(), 600, 400); // Aumenta un po' le dimensioni
+        stage.setTitle("MyGymBro Launcher");
+        stage.setScene(scene);
+        stage.show();
     }
 
     public static void main(String[] args) {

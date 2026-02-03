@@ -7,7 +7,7 @@ public class UserBean {
     private String nome;
     private String cognome;
     private String email;
-
+    private String role;
     // Costruttore vuoto
     public UserBean() {}
 
@@ -30,6 +30,10 @@ public class UserBean {
     public String getCognome() { return cognome; }
     public void setCognome(String cognome) { this.cognome = cognome; }
 
+    public String getRole() { return role; }
+    public void setRole(String role) { this.role = role; }
+
     public String getEmail() { return email; }
     public void setEmail(String email) { this.email = email; }
+
 }

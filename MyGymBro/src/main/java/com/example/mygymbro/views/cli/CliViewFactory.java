@@ -1,4 +1,6 @@
-package com.example.mygymbro.views;
+package com.example.mygymbro.views.cli;
+
+import com.example.mygymbro.views.*;
 
 public class CliViewFactory implements ViewFactory {
 
@@ -18,5 +20,9 @@ public class CliViewFactory implements ViewFactory {
         return new CliAthleteView();
 
 
+    }
+
+    public TrainerView createTrainerView() {
+        return new CliTrainerView();
     }
 }

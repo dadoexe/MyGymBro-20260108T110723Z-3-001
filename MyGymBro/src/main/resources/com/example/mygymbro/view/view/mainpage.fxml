@@ -6,7 +6,7 @@
 <?import javafx.scene.text.*?>
 
 <?import java.net.URL?>
-<BorderPane prefHeight="400.0" prefWidth="600.0" xmlns="http://javafx.com/javafx/17.0.12" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.example.mygymbro.views.GraphicAthleteView">
+<BorderPane prefHeight="400.0" prefWidth="600.0" xmlns="http://javafx.com/javafx/17.0.12" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.example.mygymbro.views.gui.GraphicAthleteView">
     <stylesheets>
         <URL value="@style.css" />
     </stylesheets>

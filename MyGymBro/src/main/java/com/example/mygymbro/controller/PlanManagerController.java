@@ -4,17 +4,12 @@ import com.example.mygymbro.bean.ExerciseBean;
 import com.example.mygymbro.bean.UserBean;
 import com.example.mygymbro.bean.WorkoutExerciseBean;
 import com.example.mygymbro.bean.WorkoutPlanBean;
-import com.example.mygymbro.dao.DAOFactory; // <--- IMPORTANTE
+import com.example.mygymbro.dao.DAOFactory;
 import com.example.mygymbro.dao.ExerciseDAO;
-import com.example.mygymbro.dao.RestApiExerciseDAO;
 import com.example.mygymbro.dao.WorkoutPlanDAO;
 import com.example.mygymbro.model.*;
 import com.example.mygymbro.views.WorkoutBuilderView;
 
-import java.net.URI;
-import java.net.http.HttpClient;
-import java.net.http.HttpRequest;
-import java.net.http.HttpResponse;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Date;
@@ -27,312 +22,195 @@ public class PlanManagerController implements Controller {
     private WorkoutPlanDAO workoutPlanDAO;
     private ExerciseDAO exerciseDAO;
     private WorkoutPlanBean currentPlan;
-
+    private UserBean targetAthlete; // Fondamentale per il Trainer
 
     // --- COSTRUTTORE 1: CREAZIONE NUOVO PIANO ---
     public PlanManagerController(WorkoutBuilderView view) {
         this.view = view;
-
-        // 1. USARE LA FACTORY! (Altrimenti addio Demo Mode)
         this.workoutPlanDAO = DAOFactory.getWorkoutPlanDAO();
-        //this.exerciseDAO = DAOFactory.getExerciseDAO();
-        this.exerciseDAO = new com.example.mygymbro.dao.RestApiExerciseDAO();
-
-        // 2. Creo un Bean VUOTO
+        this.exerciseDAO = DAOFactory.getExerciseDAO(); // Usa la factory!
         this.currentPlan = new WorkoutPlanBean();
-
-        // 3. Carico esercizi
+        this.currentPlan.setExerciseList(new ArrayList<>()); // Inizializza la lista vuota
         loadAvailableExercises();
     }
 
     // --- COSTRUTTORE 2: MODIFICA PIANO ESISTENTE ---
     public PlanManagerController(WorkoutBuilderView view, WorkoutPlanBean planToEdit) {
         this.view = view;
-
-        // 1. USARE LA FACTORY!
         this.workoutPlanDAO = DAOFactory.getWorkoutPlanDAO();
-        //this.exerciseDAO = DAOFactory.getExerciseDAO();
-        this.exerciseDAO = new com.example.mygymbro.dao.RestApiExerciseDAO();
-
-        // 2. Uso il Bean passato
+        this.exerciseDAO = DAOFactory.getExerciseDAO();
         this.currentPlan = planToEdit;
-
-        // 3. Popolo la View
         populateViewWithPlanData();
         loadAvailableExercises();
     }
 
-    // --- METODI DI UTILITÀ ---
+    public void setTargetAthlete(UserBean athlete) {
+        this.targetAthlete = athlete;
+    }
+
+    // --- LOGICA DI SALVATAGGIO (UNICA E CORRETTA) ---
+    // Questo metodo viene chiamato quando premi "SALVA" nella grafica
+    public void handleSavePlan() {
+        try {
+            // 1. Recupera TUTTI i dati dalla View in un colpo solo
+            // (Grazie al metodo che abbiamo appena aggiunto nella View)
+            WorkoutPlanBean formData = view.getWorkoutPlanBean();
+
+            // 2. Aggiorna il currentPlan (mantenendo l'ID se esiste)
+            currentPlan.setName(formData.getName());
+            currentPlan.setComment(formData.getComment());
+            currentPlan.setExerciseList(formData.getExerciseList());
+
+            // 3. Validazione
+            if (currentPlan.getName() == null || currentPlan.getName().trim().isEmpty()) {
+                view.showError("Devi dare un nome alla scheda!");
+                return;
+            }
+            if (currentPlan.getExerciseList() == null || currentPlan.getExerciseList().isEmpty()) {
+                view.showError("La scheda deve avere almeno un esercizio.");
+                return;
+            }
+
+            // 4. Conversione Bean -> Model
+            // NOTA: toModelWorkoutPlan gestisce già internamente l'assegnazione dell'ID utente (Trainer o Atleta)
+            WorkoutPlan planModel = toModelWorkoutPlan(currentPlan);
+
+            // 5. Salvataggio su DB
+            if (currentPlan.getId() > 0) {
+                workoutPlanDAO.update(planModel);
+            } else {
+                workoutPlanDAO.save(planModel);
+            }
+
+            view.showSuccess("Scheda salvata correttamente!");
+
+            // 6. Torna alla dashboard corretta
+            ApplicationController.getInstance().loadHomeBasedOnRole();
+
+        } catch (Exception e) {
+            e.printStackTrace();
+            view.showError("Errore durante il salvataggio: " + e.getMessage());
+        }
+    }
+
+    // --- ANNULLA ---
+    public void handleCancel() {
+        ApplicationController.getInstance().loadHomeBasedOnRole();
+    }
+
+    // Metodo legacy per la CLI (se serve), lo mappiamo su handleSavePlan
+    public void submit() {
+        handleSavePlan();
+    }
+
+    // --- METODI DI SUPPORTO (Exercise, Time, ecc.) ---
+
+    public void addExerciseToPlan(WorkoutExerciseBean newExercise) {
+        if (newExercise == null) return;
+        if (currentPlan.getExerciseList() == null) currentPlan.setExerciseList(new ArrayList<>());
+
+        currentPlan.getExerciseList().add(newExercise);
+        view.updateExerciseTable(currentPlan.getExerciseList());
+        calculateDuration();
+    }
+
+    public void removeExerciseFromPlan(WorkoutExerciseBean exerciseToRemove) {
+        if (currentPlan != null && currentPlan.getExerciseList() != null) {
+            currentPlan.getExerciseList().remove(exerciseToRemove);
+            view.updateExerciseTable(currentPlan.getExerciseList());
+            calculateDuration();
+        }
+    }
+
+    private void calculateDuration() {
+        int totalSeconds = 0;
+        if (currentPlan != null && currentPlan.getExerciseList() != null) {
+            for (WorkoutExerciseBean ex : currentPlan.getExerciseList()) {
+                int activeTime = ex.getSets() * ex.getReps() * 4;
+                int restTime = ex.getSets() * ex.getRestTime();
+                totalSeconds += activeTime + restTime + 60;
+            }
+        }
+        view.updateTotalTime("Durata stimata: ~" + (totalSeconds / 60) + " min");
+    }
 
     private void loadAvailableExercises() {
         try {
-            // Il DAO restituisce MODEL
             List<Exercise> exercises = exerciseDAO.findAll();
-            System.out.println("DEBUG: Esercizi scaricati dall'API: " + exercises.size());
-            // Convertiamo in BEAN per la View
-            List<ExerciseBean> beans = exercises.stream()
-                    .map(this::toExerciseBean)
-                    .collect(Collectors.toList());
-
+            List<ExerciseBean> beans = exercises.stream().map(this::toExerciseBean).collect(Collectors.toList());
             view.populateExerciseMenu(beans);
         } catch (Exception e) {
-            // Catch generico perché RestApiExerciseDAO potrebbe lanciare eccezioni non SQL
-            view.showError("Impossibile caricare gli esercizi: " + e.getMessage());
-            e.printStackTrace();
+            // view.showError("Errore API"); // Silenzioso per evitare spam all'avvio
         }
+    }
+
+    public List<ExerciseBean> searchExercisesOnApi(String keyword) {
+        try {
+            List<Exercise> results = exerciseDAO.search(keyword);
+            return results.stream().map(this::toExerciseBean).collect(Collectors.toList());
+        } catch (Exception e) { return new ArrayList<>(); }
     }
 
     private void populateViewWithPlanData() {
         if (currentPlan == null) return;
         view.setPlanName(currentPlan.getName());
         view.setPlanComment(currentPlan.getComment());
-        if (currentPlan.getExerciseList() != null) {
-        view.updateExerciseTable(currentPlan.getExerciseList());}
-
+        view.updateExerciseTable(currentPlan.getExerciseList());
         calculateDuration();
     }
-    public void addExerciseToPlan(WorkoutExerciseBean newExercise) {
-        try {
-            // 1. Validazione base
-            if (newExercise == null) {
-                view.showError("Dati esercizio non validi.");
-                return;
-            }
 
-            // 2. Inizializza la lista se è null (difensiva)
-            if (currentPlan.getExerciseList() == null) {
-                currentPlan.setExerciseList(new java.util.ArrayList<>());
-            }
+    // --- MAPPERS (Bean <-> Model) ---
 
-            // 3. Aggiungi alla lista del Bean
-            currentPlan.getExerciseList().add(newExercise);
-            System.out.println("DEBUG: Esercizio aggiunto al piano: " + newExercise.getExerciseName());
-
-            // 4. Aggiorna la vista (la tabella deve mostrare il nuovo esercizio)
-            view.updateExerciseTable(currentPlan.getExerciseList());
-
-            // 5. CALCOLA LA NUOVA DURATA (Feature Smart!) ⏱️
-            calculateDuration();
-
-        } catch (Exception e) {
-            e.printStackTrace();
-            view.showError("Errore nell'aggiunta dell'esercizio: " + e.getMessage());
-        }
-    }
-
-    // --- CALCOLO SMART DELLA DURATA ---
-    private void calculateDuration() {
-        int totalSeconds = 0;
-
-        // Recuperiamo la lista degli esercizi attualmente aggiunti
-        // Nota: Assicurati che 'currentPlan' o la lista locale sia aggiornata
-        if (currentPlan == null || currentPlan.getExerciseList() == null) return;
-
-        for (WorkoutExerciseBean ex : currentPlan.getExerciseList()) {
-            // 1. Tempo di esecuzione attivo (TUT stimato: 4 secondi a ripetizione)
-            int activeTime = ex.getSets() * ex.getReps() * 4;
-
-            // 2. Tempo di recupero (Sets * Recupero)
-            // Se fai 4 set, riposi 3 volte tra i set + 1 volta alla fine o cambio esercizio
-            int restTime = ex.getSets() * ex.getRestTime();
-
-            // 3. Tempo di cambio attrezzo (fisso 60 secondi tra esercizi)
-            totalSeconds += activeTime + restTime + 60;
-        }
-
-        // Convertiamo in minuti
-        int minutes = totalSeconds / 60;
-
-        // Aggiorniamo la vista
-        view.updateTotalTime("Durata stimata: ~" + minutes + " min");
-    }
-    // In PlanManagerController.java
-
-    public void removeExerciseFromPlan(WorkoutExerciseBean exerciseToRemove) {
-        if (currentPlan != null && currentPlan.getExerciseList() != null) {
-            // 1. Rimuovi dalla lista logica del Controller
-            currentPlan.getExerciseList().remove(exerciseToRemove);
-
-            // 2. Aggiorna la vista (così la riga sparisce anche graficamente)
-            view.updateExerciseTable(currentPlan.getExerciseList());
-
-            // 3. Ricalcola il tempo (Ecco perché lo facciamo passare da qui!)
-            calculateDuration();
-        }
-    }
-
-
-
-    // --- MAPPING (Traduttori) ---
-
-    // Model -> Bean
     private ExerciseBean toExerciseBean(Exercise e) {
-        if (e == null) return null;
-
         ExerciseBean bean = new ExerciseBean();
-        // Setto i campi uno per uno (sicuro al 100%)
-        bean.setId(String.valueOf(e.getId())); // Converto int -> String
+        bean.setId(String.valueOf(e.getId()));
         bean.setName(e.getName());
         bean.setDescription(e.getDescription());
-        // Controllo null sul gruppo muscolare per evitare crash
-        if (e.getMuscleGroup() != null) {
-            bean.setMuscleGroup(e.getMuscleGroup().name());
-        } else {
-            bean.setMuscleGroup("UNKNOWN");
-        }
-
-        // Se nel Bean hai altri campi obbligatori (es. gifUrl), settali qui o lasciali null/vuoti
-        // bean.setGifUrl("");
-
+        bean.setMuscleGroup(e.getMuscleGroup() != null ? e.getMuscleGroup().name() : "UNKNOWN");
         return bean;
     }
 
-    // Aggiungi questo metodo
-    public List<ExerciseBean> searchExercises(String keyword) {
-        try {
-            // Chiama il nuovo metodo del DAO
-            List<Exercise> results = exerciseDAO.search(keyword);
-
-            // Converte in Bean
-            return results.stream()
-                    .map(this::toExerciseBean)
-                    .collect(Collectors.toList());
-        } catch (Exception e) {
-            e.printStackTrace();
-            return new ArrayList<>();
-        }
-    }
-
-    // Bean -> Model (Per WorkoutExercise) - VERSIONE SICURA
-    private WorkoutExercise toModelWorkoutExercise(WorkoutExerciseBean b) {
-        if (b == null) return null;
-
-        // Recuperiamo il gruppo muscolare dal Bean, o mettiamo CHEST se manca
-        MuscleGroup mg = MuscleGroup.CHEST;
-        try {
-            if (b.getMuscleGroup() != null) {
-                mg = MuscleGroup.valueOf(b.getMuscleGroup());
-            }
-        } catch (Exception e) {
-            // Ignora errore di conversione
-        }
-
-        // CREIAMO UN NUOVO OGGETTO AL VOLO (Senza cercarlo nel DB)
-        // ID 0 dice al DAO: "Sono nuovo, salvami tu se non esisto"
-        Exercise definition = new Exercise(
-                0,
-                b.getExerciseName(),
-                "Importato da API",
-                mg
-        );
-
-        return new WorkoutExercise(definition, b.getSets(), b.getReps(), b.getRestTime());
-    }
-
-    // Bean -> Model (Per WorkoutPlan)
+    // QUESTO È IL METODO CRUCIALE PER L'ASSEGNAZIONE CORRETTA
     private WorkoutPlan toModelWorkoutPlan(WorkoutPlanBean bean) throws SQLException {
         if (bean == null) return null;
 
-        UserBean userBean = SessionManager.getInstance().getCurrentUser();
-        if (userBean == null) {
-            throw new IllegalStateException("Errore: Nessun utente loggato.");
+        // --- GESTIONE ID PROPRIETARIO (Fix Trainer/Atleta) ---
+        int ownerId;
+        if (this.targetAthlete != null) {
+            // Se sono un Trainer che crea per un cliente
+            ownerId = this.targetAthlete.getId();
+        } else {
+            // Se sono un utente che crea per me stesso
+            UserBean me = SessionManager.getInstance().getCurrentUser();
+            if (me == null) throw new IllegalStateException("Nessun utente loggato");
+            ownerId = me.getId();
         }
 
-        // Creiamo un oggetto "dummy" Athlete solo per passare l'ID al DAO
-        // Assumiamo che UserBean abbia un metodo getId() che ritorna l'int del DB
         Athlete athlete = new Athlete();
-
-        // ATTENZIONE: Assicurati che UserBean abbia il metodo getId()!
-        // Se getId() ritorna String, fai Integer.parseInt(userBean.getId())
-        athlete.setId(userBean.getId());
-
-        // Creo il Model del piano
-        int idToUse = bean.getId();
+        athlete.setId(ownerId);
 
         WorkoutPlan plan = new WorkoutPlan(
-                idToUse, // <--- PRIMA C'ERA SCRITTO 0
+                bean.getId(),
                 bean.getName(),
                 bean.getComment(),
                 new Date(),
                 athlete
         );
 
-        // Aggiungo gli esercizi convertiti
-        for (WorkoutExerciseBean web : bean.getExerciseList()) {
-            plan.addExercise(toModelWorkoutExercise(web));
+        if (bean.getExerciseList() != null) {
+            for (WorkoutExerciseBean web : bean.getExerciseList()) {
+                plan.addExercise(toModelWorkoutExercise(web));
+            }
         }
-
         return plan;
     }
 
-    // --- METODO NUOVO PER LA RICERCA ---
-    public List<ExerciseBean> searchExercisesOnApi(String keyword) {
-        try {
-            // Chiama il metodo search del DAO (che abbiamo creato prima)
-            List<Exercise> results = exerciseDAO.search(keyword);
+    private WorkoutExercise toModelWorkoutExercise(WorkoutExerciseBean b) {
+        MuscleGroup mg = MuscleGroup.CHEST; // Default
+        try { if(b.getMuscleGroup()!=null) mg = MuscleGroup.valueOf(b.getMuscleGroup()); } catch(Exception e){}
 
-            // Converte i risultati in Bean per la grafica
-            return results.stream()
-                    .map(this::toExerciseBean)
-                    .collect(Collectors.toList());
-        } catch (Exception e) {
-            e.printStackTrace();
-            return new java.util.ArrayList<>(); // Ritorna lista vuota se fallisce
-        }
-    }
-
-
-
-    // --- LOGICA DI SALVATAGGIO ---
-
-    public void handleCancel() {
-        // Torna semplicemente alla Home / Dashboard
-        ApplicationController.getInstance().loadHome();
-    }
-
-    // Modifica il metodo handleSavePlan così:
-    public void handleSavePlan() {
-        try {
-            // 1. Aggiorna i dati base dal form
-            currentPlan.setName(view.getPlanName());
-            currentPlan.setComment(view.getComment());
-
-            // 2. Recupera gli esercizi dalla tabella della View
-            // (Assicurati che GraphicWorkoutBuilderView abbia il metodo getAddedExercises())
-            List<WorkoutExerciseBean> exercisesFromTable = view.getAddedExercises();
-            currentPlan.setExerciseList(exercisesFromTable);
-
-            // Controllo validazione
-            if (currentPlan.getName() == null || currentPlan.getName().trim().isEmpty()) {
-                view.showError("Devi dare un nome alla scheda!");
-                return;
-            }
-
-            // 3. Converto BEAN -> MODEL
-            WorkoutPlan planModel = toModelWorkoutPlan(currentPlan);
-
-            // 4. DECISIONE: INSERT o UPDATE?
-            if (currentPlan.getId() > 0) {
-                // Se l'ID è maggiore di 0, la scheda esiste già -> UPDATE
-                // Nota: Assicurati di avere il metodo update nel DAO!
-                workoutPlanDAO.update(planModel);
-                // Se non hai update(), spesso si usa delete(id) + save(model), ma è rischioso per gli ID.
-                // L'ideale è implementare update nel DAO.
-            } else {
-                // ID è 0 o null -> INSERT
-                workoutPlanDAO.save(planModel);
-            }
-
-            // 5. Torna alla dashboard
-            ApplicationController.getInstance().loadHome();
-
-        } catch (SQLException e) {
-            view.showError("Errore Database: " + e.getMessage());
-            e.printStackTrace();
-        } catch (Exception e) {
-            view.showError("Errore: " + e.getMessage());
-            e.printStackTrace();
-        }
+        Exercise definition = new Exercise(0, b.getExerciseName(), "Custom", mg);
+        return new WorkoutExercise(definition, b.getSets(), b.getReps(), b.getRestTime());
     }
 
     @Override

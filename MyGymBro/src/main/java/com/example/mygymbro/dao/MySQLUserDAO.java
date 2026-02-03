@@ -12,12 +12,13 @@ public class MySQLUserDAO implements UserDAO {
 
     @Override
     public User findByUsername(String username) {
-        // 1. QUERY SEMPLIFICATA
-        // Prendo i dati utente e, se ci sono, i dati fisici.
-        // Niente più personal_trainer!
-        String query = "SELECT u.*, a.weight, a.height, a.age " +
+        // 1. QUERY COMPLETA: Guarda sia in ATHLETE che in PERSONAL_TRAINER
+        String query = "SELECT u.*, " +
+                "a.weight, a.height, a.age, " +   // Dati Atleta
+                "pt.cert_code " +                 // Dati Trainer
                 "FROM user u " +
                 "LEFT JOIN athlete a ON u.id = a.user_id " +
+                "LEFT JOIN personal_trainer pt ON u.id = pt.user_id " + // <--- FONDAMENTALE
                 "WHERE u.username = ?";
 
         Connection conn = null;
@@ -33,30 +34,33 @@ public class MySQLUserDAO implements UserDAO {
             rs = stmt.executeQuery();
 
             if (rs.next()) {
-                // --- A. RECUPERO DATI BASE ---
+                // --- A. RECUPERO DATI COMUNI (Tabella User) ---
                 int id = rs.getInt("id");
                 String dbUsername = rs.getString("username");
                 String dbPassword = rs.getString("password");
-                String nome = rs.getString("nome");     // Occhio se nel DB è 'name' o 'nome'
+                String nome = rs.getString("nome");
                 String cognome = rs.getString("cognome");
                 String email = rs.getString("email");
 
-                // --- B. RECUPERO DATI ATLETA ---
-                // Usiamo dei default (es. 0) se l'utente non ha ancora compilato il peso
-                float weight = rs.getFloat("weight"); // Restituisce 0.0 se null
-                float height = rs.getFloat("height");
-                int age = rs.getInt("age");
+                // --- B. CONTROLLO DI TIPO ---
+                String certCode = rs.getString("cert_code");
 
-                // --- C. CREAZIONE DIRETTA DELL'ATLETA ---
-                // Non ci chiediamo più "chi è?". È per forza un Atleta!
-                user = new Athlete(id, dbUsername, dbPassword, nome, age, email, cognome, weight, height);
+                if (certCode != null && !certCode.isEmpty()) {
+                    // 1. Trovato codice certificazione -> È UN TRAINER!
+                    user = new PersonalTrainer(id, dbUsername, dbPassword, nome, cognome, email, certCode);
+                } else {
+                    // 2. Altrimenti -> È UN ATLETA (Default)
+                    float weight = rs.getFloat("weight");
+                    float height = rs.getFloat("height");
+                    int age = rs.getInt("age");
+                    user = new Athlete(id, dbUsername, dbPassword, nome, age, email, cognome, weight, height);
+                }
             }
 
         } catch (SQLException e) {
             System.err.println("Errore nel findByUsername: " + e.getMessage());
             e.printStackTrace();
         } finally {
-            // Chiusura risorse pulita
             DAOUtils.close(conn, stmt, rs);
         }
 
@@ -83,8 +87,7 @@ public class MySQLUserDAO implements UserDAO {
     private void saveAthlete(Athlete athlete) throws SQLException{
         // Corrisponde ai campi in User.java
         String userQuery = "INSERT INTO user (username, password, name, cognome, email) VALUES (?, ?, ?, ?, ?)";
-        // Il primo '?' è la Foreign Key (l'ID generato dalla userQuery)
-        // Poi inseriamo i campi specifici della classe Athlete
+
         String athleteQuery = "INSERT INTO athlete (user_id, weight, height, age) VALUES (?, ?, ?, ?)";
         String trainerQuery = "INSERT INTO personal_trainer (user_id, cert_code) VALUES (?, ?)";
 

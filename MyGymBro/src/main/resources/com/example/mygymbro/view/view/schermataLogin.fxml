@@ -10,7 +10,7 @@
 
 <?import java.net.URL?>
 
-<VBox alignment="CENTER" spacing="20.0" xmlns="http://javafx.com/javafx/17" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.example.mygymbro.views.GraphicLoginView">
+<VBox alignment="CENTER" spacing="20.0" xmlns="http://javafx.com/javafx/17" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.example.mygymbro.views.gui.GraphicLoginView">
     <stylesheets>
         <URL value="@style.css" />
     </stylesheets>

@@ -16,7 +16,7 @@ import java.util.List;
 
 public class RestApiExerciseDAO implements ExerciseDAO {
 
-    // URL per scaricare TUTTO (offset 0 e limit 1324) - tutto minuscolo
+
     private static final String API_URL = "https://exercisedb.p.rapidapi.com/exercises?offset=0&limit=50";
     private static final String API_KEY = "b5a76e4d57msh6edf21dcd3dd851p199802jsne8b14218cbd4";
     private static final String API_HOST = "exercisedb.p.rapidapi.com";
@@ -67,7 +67,7 @@ public class RestApiExerciseDAO implements ExerciseDAO {
         return modelList;
     }
 
-    // ... dentro RestApiExerciseDAO ...
+
     public List<Exercise> search(String keyword) {
         List<Exercise> modelList = new ArrayList<>();
 
@@ -77,7 +77,7 @@ public class RestApiExerciseDAO implements ExerciseDAO {
         }
 
         // COSTRUIAMO L'URL DI RICERCA SPECIFICO
-        // Nota: URLEncoder servirebbe per spazi e caratteri strani, ma per ora semplifichiamo
+
         String searchUrl = "https://exercisedb.p.rapidapi.com/exercises/name/" + keyword.trim().replace(" ", "%20") + "?limit=50";
 
         try {
@@ -94,9 +94,7 @@ public class RestApiExerciseDAO implements ExerciseDAO {
                     .send(request, HttpResponse.BodyHandlers.ofString());
 
             if (response.statusCode() == 200) {
-                // ... (Copia qui la stessa logica di parsing JSON che hai in findAll) ...
-                // Gson gson = new Gson(); ... ecc ecc
-                // Per brevità: è identico al blocco dentro findAll, cambia solo l'URL di partenza.
+
 
                 String jsonBody = response.body();
                 com.google.gson.Gson gson = new com.google.gson.Gson();

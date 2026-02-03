@@ -5,4 +5,5 @@ public interface ViewFactory {
     LoginView createLoginView();
     WorkoutBuilderView createWorkoutBuilderView();
     AthleteView createAthleteView(); // Scommenta quando avrai la AthleteView
+    TrainerView createTrainerView();
 }

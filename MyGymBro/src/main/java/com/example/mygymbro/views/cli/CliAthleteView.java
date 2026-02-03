@@ -1,13 +1,14 @@
-package com.example.mygymbro.views;
+package com.example.mygymbro.views.cli;
 
 import com.example.mygymbro.bean.WorkoutExerciseBean;
 import com.example.mygymbro.bean.WorkoutPlanBean;
 import com.example.mygymbro.controller.NavigationController;
+import com.example.mygymbro.views.AthleteView;
 
 import java.util.List;
 import java.util.Scanner;
 
-public class CliAthleteView implements AthleteView {
+public class CliAthleteView implements AthleteView, CliView {
 
     private NavigationController listener;
     private Scanner scanner;
@@ -19,8 +20,12 @@ public class CliAthleteView implements AthleteView {
         this.scanner = new Scanner(System.in);
     }
 
+    // --- METODI View ---
+    @Override public void showSuccess(String msg) { System.out.println("[OK] " + msg); }
+    @Override public void showError(String msg) { System.out.println("[ERR] " + msg); }
+
     @Override
-    public void show() {
+    public void run() {
         // 1. FIX DOPPIA STAMPA: Carichiamo i dati UNA SOLA VOLTA fuori dal loop
         if (listener != null) {
             listener.loadDashboardData();
@@ -53,16 +58,6 @@ public class CliAthleteView implements AthleteView {
                     System.out.println("Comando non valido.");
             }
         }
-    }
-
-    @Override
-    public void close() {
-
-    }
-
-    @Override
-    public void showMessage() {
-
     }
 
     // --- LOGICA DI GESTIONE SCHEDE ---
@@ -175,16 +170,6 @@ public class CliAthleteView implements AthleteView {
     public void updateWelcomeMessage(String msg) {
         // Stampiamo solo se è la prima volta o se serve davvero
         System.out.println("Benvenuto " + msg);
-    }
-
-    @Override
-    public void showWorkoutPlans(List<WorkoutPlanBean> plans) {
-
-    }
-
-    @Override
-    public void showNoPlansMessage() {
-
     }
 
     @Override

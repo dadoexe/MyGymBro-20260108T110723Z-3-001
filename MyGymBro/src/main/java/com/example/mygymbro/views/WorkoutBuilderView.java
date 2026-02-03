@@ -2,32 +2,27 @@ package com.example.mygymbro.views;
 
 import com.example.mygymbro.bean.ExerciseBean;
 import com.example.mygymbro.bean.WorkoutExerciseBean;
+import com.example.mygymbro.bean.WorkoutPlanBean;
 import com.example.mygymbro.controller.PlanManagerController;
-
 import java.util.List;
 
-public interface WorkoutBuilderView extends View{
+public interface WorkoutBuilderView extends View {
 
+    void setListener(PlanManagerController controller);
 
+    // Gestione Nomi/Commenti
     String getPlanName();
-
-     ExerciseBean getSelectedExercise();
-     void setPlanComment(String comment);
-     String getSets();
-
-     String getReps();
-    List<WorkoutExerciseBean> getAddedExercises();
-
-     void setListener(PlanManagerController controller);
-
-    void populateExerciseMenu(List<ExerciseBean> exercises);
-
-     void setPlanName(String name);
-
-     void updateExerciseTable(List<WorkoutExerciseBean> exercises);
-     void showError(String message);
-
+    void setPlanName(String name);
     String getComment();
+    void setPlanComment(String comment);
+
+    // Gestione Esercizi
+    void populateExerciseMenu(List<ExerciseBean> exercises);
+    void updateExerciseTable(List<WorkoutExerciseBean> exercises);
+    List<WorkoutExerciseBean> getAddedExercises();
+    void updateExerciseList(List<WorkoutExerciseBean> exercises);
+    // Gestione Tempo
     void updateTotalTime(String timeMessage);
+    WorkoutPlanBean getWorkoutPlanBean();
 }
 
