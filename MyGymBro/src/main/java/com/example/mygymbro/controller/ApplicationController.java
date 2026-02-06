@@ -161,48 +161,47 @@ public final class ApplicationController implements Controller {//singleton
     }
 
 
-    // --- VERSIONE 1: CREAZIONE NUOVA SCHEDA (Nessun argomento) ---
-    public void loadWorkoutBuilder() {
-        // Chiama il metodo principale passando null, perché non c'è nessuna scheda da modificare
-        loadWorkoutBuilder(null);
-    }
-
-    // --- VERSIONE 2: MODIFICA O CREAZIONE (Logica Principale) ---
-    public void loadWorkoutBuilder(WorkoutPlanBean planToEdit) {
+    // VERSIONE AGGIORNATA: Accetta anche l'atleta proprietario (owner)
+    public void loadWorkoutBuilder(WorkoutPlanBean planToEdit, com.example.mygymbro.bean.AthleteBean owner) {
         try {
             // 1. Pulizia
             if (currentController != null) {
                 currentController.dispose();
             }
 
-            // 2. CREAZIONE VISTA TRAMITE FACTORY (Il fix è qui!)
+            // 2. CREAZIONE VISTA
             WorkoutBuilderView view = viewFactory.createWorkoutBuilderView();
-
-            if (view == null) {
-                System.err.println("ERRORE CRITICO: La factory ha restituito NULL per WorkoutBuilderView!");
-                return;
-            }
+            if (view == null) return;
 
             // 3. Setup Controller
             PlanManagerController controller;
             if (planToEdit == null) {
-                // CASO A: NUOVA SCHEDA
                 controller = new PlanManagerController(view);
             } else {
-                // CASO B: MODIFICA SCHEDA
                 controller = new PlanManagerController(view, planToEdit);
             }
+
+            // --- FIX CRUCIALE: Se abbiamo un proprietario (es. Mario), lo passiamo al controller ---
+            if (owner != null) {
+                controller.setTargetAthlete(owner);
+            }
+            // --------------------------------------------------------------------------------------
 
             view.setListener(controller);
             this.currentController = controller;
 
-            // 4. Mostra a video (Render)
+            // 4. Render
             renderView(view);
 
         } catch (Exception e) {
             e.printStackTrace();
             System.err.println("Errore nel caricamento del WorkoutBuilder: " + e.getMessage());
         }
+    }
+
+    // Overload per mantenere compatibilità con chi non passa l'atleta (es. tasto "Nuova Scheda" generico)
+    public void loadWorkoutBuilder() {
+        loadWorkoutBuilder(null, null);
     }
 
     public void loadWorkoutBuilderForClient(com.example.mygymbro.bean.AthleteBean client) {

@@ -73,8 +73,8 @@ public class NavigationController implements Controller {
 
     // 1. Modifica Scheda
     public void modifyPlan(WorkoutPlanBean plan) {
-        // Carichiamo il Builder passando la scheda da modificare
-        ApplicationController.getInstance().loadWorkoutBuilder(plan);
+        // L'atleta modifica se stesso, non serve specificare un owner esterno (sarà null)
+        ApplicationController.getInstance().loadWorkoutBuilder(plan, null);
     }
 
     // 2. Elimina Scheda

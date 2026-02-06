@@ -81,9 +81,15 @@ public class TrainerController implements Controller {
 
     public void modifySelectedPlan() {
         WorkoutPlanBean plan = view.getSelectedPlan();
+        // RECUPERIAMO IL CLIENTE ATTUALMENTE SELEZIONATO NELLA VISTA
+        AthleteBean currentClient = view.getSelectedAthlete();
+
         if (plan != null) {
             System.out.println("Modifica scheda: " + plan.getName());
-            ApplicationController.getInstance().loadWorkoutBuilder(plan);
+
+            // FIX: Passiamo sia la scheda SIA il cliente all'ApplicationController
+            ApplicationController.getInstance().loadWorkoutBuilder(plan, currentClient);
+
         } else {
             view.showError("Nessuna scheda selezionata!");
         }
