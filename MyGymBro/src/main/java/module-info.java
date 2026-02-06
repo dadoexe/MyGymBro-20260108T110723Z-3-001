@@ -9,7 +9,7 @@ open module com.example.mygymbro {
     requires java.net.http;
     requires com.google.gson;
     requires javafx.graphics;
-
+    requires javafx.web;
 
     // EXPORTS: Servono per dire "queste classi sono pubbliche"
     exports com.example.mygymbro;

@@ -3,6 +3,7 @@ package com.example.mygymbro.views.gui;
 import com.example.mygymbro.bean.WorkoutPlanBean;
 import com.example.mygymbro.controller.NavigationController;
 import com.example.mygymbro.views.AthleteView;
+import javafx.application.Platform;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.scene.Parent;
@@ -18,7 +19,7 @@ public class GraphicAthleteView implements AthleteView, GraphicView {
     @FXML private Label lblTotalPlans;
     @FXML private Label lblLastActivity;
 
-    // USIAMO SOLO QUESTA LISTA (di Bean)
+    // --- CORREZIONE: TENIAMO SOLO QUESTA VARIABILE ---
     @FXML private ListView<WorkoutPlanBean> listWorkoutPlans;
 
     private NavigationController listener;
@@ -26,7 +27,20 @@ public class GraphicAthleteView implements AthleteView, GraphicView {
 
     @FXML
     public void initialize() {
-        if (listWorkoutPlans != null) listWorkoutPlans.getItems().clear();
+        // Pulisce la lista all'avvio per sicurezza
+        if (listWorkoutPlans != null) {
+            listWorkoutPlans.getItems().clear();
+
+            // --- GESTIONE DOPPIO CLIC (Aggiornata per usare listWorkoutPlans) ---
+            listWorkoutPlans.setOnMouseClicked(event -> {
+                if (event.getClickCount() == 2) { // 2 click veloci
+                    WorkoutPlanBean selected = listWorkoutPlans.getSelectionModel().getSelectedItem();
+                    if (selected != null && listener != null) {
+                        listener.openPlanPreview(selected);
+                    }
+                }
+            });
+        }
     }
 
     @Override
@@ -39,29 +53,35 @@ public class GraphicAthleteView implements AthleteView, GraphicView {
         if (lblWelcome != null) lblWelcome.setText("Benvenuto " + msg + "!");
     }
 
+    // --- METODO AGGIORNATO E SICURO ---
     @Override
     public void updateWorkoutList(List<WorkoutPlanBean> workoutPlans) {
-        // 1. Aggiorna la lista centrale
-        if (listWorkoutPlans != null) {
-            listWorkoutPlans.getItems().clear();
-            listWorkoutPlans.getItems().addAll(workoutPlans);
-        }
-
-        // 2. Aggiorna le Statistiche in alto
-        if (lblTotalPlans != null) {
-            lblTotalPlans.setText(String.valueOf(workoutPlans.size()));
-        }
-
-        if (lblLastActivity != null) {
-            if (!workoutPlans.isEmpty()) {
-                WorkoutPlanBean last = workoutPlans.get(workoutPlans.size() - 1);
-                SimpleDateFormat sdf = new SimpleDateFormat("dd/MM/yyyy");
-                String dateStr = (last.getCreationDate() != null) ? sdf.format(last.getCreationDate()) : "Recente";
-                lblLastActivity.setText(dateStr);
-            } else {
-                lblLastActivity.setText("--");
+        Platform.runLater(() -> {
+            // 1. Aggiorna la lista centrale
+            if (listWorkoutPlans != null) {
+                listWorkoutPlans.getItems().clear();
+                if (workoutPlans != null) {
+                    listWorkoutPlans.getItems().addAll(workoutPlans);
+                }
             }
-        }
+
+            // 2. Aggiorna le Statistiche in alto
+            if (lblTotalPlans != null) {
+                lblTotalPlans.setText(String.valueOf(workoutPlans != null ? workoutPlans.size() : 0));
+            }
+
+            if (lblLastActivity != null) {
+                if (workoutPlans != null && !workoutPlans.isEmpty()) {
+                    WorkoutPlanBean last = workoutPlans.get(workoutPlans.size() - 1);
+                    SimpleDateFormat sdf = new SimpleDateFormat("dd/MM/yyyy");
+                    // Controllo null sulla data per evitare crash
+                    String dateStr = (last.getCreationDate() != null) ? sdf.format(last.getCreationDate()) : "Recente";
+                    lblLastActivity.setText(dateStr);
+                } else {
+                    lblLastActivity.setText("--");
+                }
+            }
+        });
     }
 
     // --- BOTTONI ---
@@ -78,6 +98,7 @@ public class GraphicAthleteView implements AthleteView, GraphicView {
 
     @FXML
     public void handleDeletePlan(ActionEvent event) {
+        if (listWorkoutPlans == null) return;
         WorkoutPlanBean selected = listWorkoutPlans.getSelectionModel().getSelectedItem();
         if (selected != null && listener != null) {
             listener.deletePlan(selected);
@@ -88,6 +109,7 @@ public class GraphicAthleteView implements AthleteView, GraphicView {
 
     @FXML
     public void handleEditPlan(ActionEvent event) {
+        if (listWorkoutPlans == null) return;
         WorkoutPlanBean selected = listWorkoutPlans.getSelectionModel().getSelectedItem();
         if (selected != null && listener != null) {
             listener.modifyPlan(selected);

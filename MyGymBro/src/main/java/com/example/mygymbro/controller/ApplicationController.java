@@ -106,22 +106,29 @@ public final class ApplicationController implements Controller {//singleton
         }
     }
 
-    public void loadTrainerDashboard() {
+    public void loadTrainerDashboard(com.example.mygymbro.bean.AthleteBean preSelectedAthlete) {
         if (currentController != null) currentController.dispose();
 
         TrainerView view = viewFactory.createTrainerView();
-
-        if (view == null) {
-            System.err.println("ERRORE: Factory ha restituito NULL per TrainerView");
-            return;
-        }
+        if (view == null) return;
 
         TrainerController controller = new TrainerController(view);
         view.setListener(controller);
         this.currentController = controller;
 
         controller.loadDashboardData();
+
+        // SE AVEVAMO UN CLIENTE SELEZIONATO, RIPRISTINALO!
+        if (preSelectedAthlete != null) {
+            view.setSelectedAthlete(preSelectedAthlete);
+        }
+
         renderView(view);
+    }
+
+    // Overload per compatibilità (chiama quello sopra con null)
+    public void loadTrainerDashboard() {
+        loadTrainerDashboard(null);
     }
 
     public void loadAthleteDashboard() {
@@ -197,6 +204,7 @@ public final class ApplicationController implements Controller {//singleton
             System.err.println("Errore nel caricamento del WorkoutBuilder: " + e.getMessage());
         }
     }
+
     public void loadWorkoutBuilderForClient(com.example.mygymbro.bean.AthleteBean client) {
         try {
             if (currentController != null) currentController.dispose();
@@ -219,6 +227,43 @@ public final class ApplicationController implements Controller {//singleton
             e.printStackTrace();
             System.err.println("Errore loadWorkoutBuilderForClient: " + e.getMessage());
         }
+    }
+    // ... altri metodi ...
+
+    public void loadWorkoutPreview(WorkoutPlanBean plan) {
+        if (currentController != null) currentController.dispose();
+
+        // 1. Crea la View (Dovrai aggiungere createWorkoutPreviewView alla Factory!)
+        WorkoutPreviewView view = viewFactory.createWorkoutPreviewView();
+
+        if (view == null) return;
+
+        // 2. Crea Controller
+        PreviewController controller = new PreviewController(view, plan);
+        view.setListener(controller);
+        this.currentController = controller;
+
+        renderView(view);
+    }
+    public void loadLiveSession(WorkoutPlanBean planToExecute) {
+        if (currentController != null) currentController.dispose();
+
+        // 1. Crea View (GUI o CLI tramite factory)
+        LiveSessionView view = viewFactory.createLiveSessionView();
+
+        if (view == null) {
+            System.err.println("ERRORE: Factory LiveSessionView ha restituito null");
+            return;
+        }
+
+        // 2. Crea Controller
+        LiveSessionController controller = new LiveSessionController(view, planToExecute);
+        view.setListener(controller);
+        this.currentController = controller;
+
+        // 3. Render
+        renderView(view);
+        controller.startSession();
     }
 
     public void logout() {

@@ -6,4 +6,6 @@ public interface ViewFactory {
     WorkoutBuilderView createWorkoutBuilderView();
     AthleteView createAthleteView(); // Scommenta quando avrai la AthleteView
     TrainerView createTrainerView();
+    WorkoutPreviewView createWorkoutPreviewView();
+    LiveSessionView createLiveSessionView();
 }

@@ -3,98 +3,7 @@
   <database-model serializer="dbm" dbms="MARIADB" family-id="MARIADB" format-version="4.53">
     <root id="1">
       <DefaultAuthPlugin>mysql_native_password</DefaultAuthPlugin>
-      <DefaultCasing>lower/lower</DefaultCasing>
       <DefaultEngine>InnoDB</DefaultEngine>
-      <Grants>|root||root|127.0.0.1|ALTER|G
-|root||root|::1|ALTER|G
-|root||root|localhost|ALTER|G
-|root||root|127.0.0.1|ALTER ROUTINE|G
-|root||root|::1|ALTER ROUTINE|G
-|root||root|localhost|ALTER ROUTINE|G
-|root||root|127.0.0.1|CREATE|G
-|root||root|::1|CREATE|G
-|root||root|localhost|CREATE|G
-|root||root|127.0.0.1|CREATE ROUTINE|G
-|root||root|::1|CREATE ROUTINE|G
-|root||root|localhost|CREATE ROUTINE|G
-|root||root|127.0.0.1|CREATE TABLESPACE|G
-|root||root|::1|CREATE TABLESPACE|G
-|root||root|localhost|CREATE TABLESPACE|G
-|root||root|127.0.0.1|CREATE TEMPORARY TABLES|G
-|root||root|::1|CREATE TEMPORARY TABLES|G
-|root||root|localhost|CREATE TEMPORARY TABLES|G
-|root||root|127.0.0.1|CREATE USER|G
-|root||root|::1|CREATE USER|G
-|root||root|localhost|CREATE USER|G
-|root||root|127.0.0.1|CREATE VIEW|G
-|root||root|::1|CREATE VIEW|G
-|root||root|localhost|CREATE VIEW|G
-|root||root|127.0.0.1|DELETE|G
-|root||root|::1|DELETE|G
-|root||root|localhost|DELETE|G
-|root||root|127.0.0.1|DELETE HISTORY|G
-|root||root|::1|DELETE HISTORY|G
-|root||root|localhost|DELETE HISTORY|G
-|root||root|127.0.0.1|DROP|G
-|root||root|::1|DROP|G
-|root||root|localhost|DROP|G
-|root||root|127.0.0.1|EVENT|G
-|root||root|::1|EVENT|G
-|root||root|localhost|EVENT|G
-|root||root|127.0.0.1|EXECUTE|G
-|root||root|::1|EXECUTE|G
-|root||root|localhost|EXECUTE|G
-|root||root|127.0.0.1|FILE|G
-|root||root|::1|FILE|G
-|root||root|localhost|FILE|G
-|root||root|127.0.0.1|INDEX|G
-|root||root|::1|INDEX|G
-|root||root|localhost|INDEX|G
-|root||root|127.0.0.1|INSERT|G
-|root||root|::1|INSERT|G
-|root||root|localhost|INSERT|G
-|root||root|127.0.0.1|LOCK TABLES|G
-|root||root|::1|LOCK TABLES|G
-|root||root|localhost|LOCK TABLES|G
-|root||root|127.0.0.1|PROCESS|G
-|root||root|::1|PROCESS|G
-|root||root|localhost|PROCESS|G
-|root||root|127.0.0.1|REFERENCES|G
-|root||root|::1|REFERENCES|G
-|root||root|localhost|REFERENCES|G
-|root||root|127.0.0.1|RELOAD|G
-|root||root|::1|RELOAD|G
-|root||root|localhost|RELOAD|G
-|root||root|127.0.0.1|REPLICATION CLIENT|G
-|root||root|::1|REPLICATION CLIENT|G
-|root||root|localhost|REPLICATION CLIENT|G
-|root||root|127.0.0.1|REPLICATION SLAVE|G
-|root||root|::1|REPLICATION SLAVE|G
-|root||root|localhost|REPLICATION SLAVE|G
-|root||root|127.0.0.1|SELECT|G
-|root||root|::1|SELECT|G
-|root||root|localhost|SELECT|G
-|root||root|127.0.0.1|SHOW DATABASES|G
-|root||root|::1|SHOW DATABASES|G
-|root||root|localhost|SHOW DATABASES|G
-|root||root|127.0.0.1|SHOW VIEW|G
-|root||root|::1|SHOW VIEW|G
-|root||root|localhost|SHOW VIEW|G
-|root||root|127.0.0.1|SHUTDOWN|G
-|root||root|::1|SHUTDOWN|G
-|root||root|localhost|SHUTDOWN|G
-|root||root|127.0.0.1|SUPER|G
-|root||root|::1|SUPER|G
-|root||root|localhost|SUPER|G
-|root||root|127.0.0.1|TRIGGER|G
-|root||root|::1|TRIGGER|G
-|root||root|localhost|TRIGGER|G
-|root||root|127.0.0.1|UPDATE|G
-|root||root|::1|UPDATE|G
-|root||root|localhost|UPDATE|G
-|root||root|127.0.0.1|grant option|G
-|root||root|::1|grant option|G
-|root||root|localhost|grant option|G</Grants>
       <ServerVersion>10.4.32</ServerVersion>
     </root>
     <collation id="2" parent="1" name="armscii8_bin">
@@ -1196,7 +1105,7 @@
       <UnderlyingIndexName>PRIMARY</UnderlyingIndexName>
     </key>
     <column id="346" parent="335" name="id">
-      <AutoIncrement>5</AutoIncrement>
+      <AutoIncrement>26</AutoIncrement>
       <NotNull>1</NotNull>
       <Position>1</Position>
       <StoredType>int(11)|0s</StoredType>
@@ -1214,154 +1123,158 @@
       <Position>4</Position>
       <StoredType>varchar(50)|0s</StoredType>
     </column>
-    <index id="350" parent="335" name="PRIMARY">
+    <column id="350" parent="335" name="gif_url">
+      <Position>5</Position>
+      <StoredType>varchar(512)|0s</StoredType>
+    </column>
+    <index id="351" parent="335" name="PRIMARY">
       <ColNames>id</ColNames>
       <Type>btree</Type>
       <Unique>1</Unique>
     </index>
-    <key id="351" parent="335" name="PRIMARY">
+    <key id="352" parent="335" name="PRIMARY">
       <NameSurrogate>1</NameSurrogate>
       <Primary>1</Primary>
       <UnderlyingIndexName>PRIMARY</UnderlyingIndexName>
     </key>
-    <column id="352" parent="336" name="id">
+    <column id="353" parent="336" name="id">
       <AutoIncrement>2</AutoIncrement>
       <NotNull>1</NotNull>
       <Position>1</Position>
       <StoredType>int(11)|0s</StoredType>
     </column>
-    <column id="353" parent="336" name="username">
+    <column id="354" parent="336" name="username">
       <NotNull>1</NotNull>
       <Position>2</Position>
       <StoredType>varchar(50)|0s</StoredType>
     </column>
-    <column id="354" parent="336" name="password">
+    <column id="355" parent="336" name="password">
       <NotNull>1</NotNull>
       <Position>3</Position>
       <StoredType>varchar(50)|0s</StoredType>
     </column>
-    <column id="355" parent="336" name="email">
+    <column id="356" parent="336" name="email">
       <Position>4</Position>
       <StoredType>varchar(100)|0s</StoredType>
     </column>
-    <column id="356" parent="336" name="nome">
+    <column id="357" parent="336" name="nome">
       <Position>5</Position>
       <StoredType>varchar(50)|0s</StoredType>
     </column>
-    <column id="357" parent="336" name="cognome">
+    <column id="358" parent="336" name="cognome">
       <Position>6</Position>
       <StoredType>varchar(50)|0s</StoredType>
     </column>
-    <index id="358" parent="336" name="PRIMARY">
+    <index id="359" parent="336" name="PRIMARY">
       <ColNames>id</ColNames>
       <Type>btree</Type>
       <Unique>1</Unique>
     </index>
-    <index id="359" parent="336" name="username">
+    <index id="360" parent="336" name="username">
       <ColNames>username</ColNames>
       <Type>btree</Type>
       <Unique>1</Unique>
     </index>
-    <key id="360" parent="336" name="PRIMARY">
+    <key id="361" parent="336" name="PRIMARY">
       <NameSurrogate>1</NameSurrogate>
       <Primary>1</Primary>
       <UnderlyingIndexName>PRIMARY</UnderlyingIndexName>
     </key>
-    <key id="361" parent="336" name="username">
+    <key id="362" parent="336" name="username">
       <UnderlyingIndexName>username</UnderlyingIndexName>
     </key>
-    <column id="362" parent="337" name="workout_plan_id">
+    <column id="363" parent="337" name="workout_plan_id">
       <NotNull>1</NotNull>
       <Position>1</Position>
       <StoredType>int(11)|0s</StoredType>
     </column>
-    <column id="363" parent="337" name="exercise_id">
+    <column id="364" parent="337" name="exercise_id">
       <NotNull>1</NotNull>
       <Position>2</Position>
       <StoredType>int(11)|0s</StoredType>
     </column>
-    <column id="364" parent="337" name="sets">
+    <column id="365" parent="337" name="sets">
       <DefaultExpression>0</DefaultExpression>
       <Position>3</Position>
       <StoredType>int(11)|0s</StoredType>
     </column>
-    <column id="365" parent="337" name="reps">
+    <column id="366" parent="337" name="reps">
       <DefaultExpression>0</DefaultExpression>
       <Position>4</Position>
       <StoredType>int(11)|0s</StoredType>
     </column>
-    <column id="366" parent="337" name="rest_time">
+    <column id="367" parent="337" name="rest_time">
       <DefaultExpression>0</DefaultExpression>
       <Position>5</Position>
       <StoredType>int(11)|0s</StoredType>
     </column>
-    <foreign-key id="367" parent="337" name="workout_exercise_ibfk_1">
+    <foreign-key id="368" parent="337" name="workout_exercise_ibfk_1">
       <ColNames>workout_plan_id</ColNames>
       <OnDelete>cascade</OnDelete>
       <RefColNames>id</RefColNames>
       <RefTableName>workout_plan</RefTableName>
     </foreign-key>
-    <foreign-key id="368" parent="337" name="workout_exercise_ibfk_2">
+    <foreign-key id="369" parent="337" name="workout_exercise_ibfk_2">
       <ColNames>exercise_id</ColNames>
       <OnDelete>cascade</OnDelete>
       <RefColNames>id</RefColNames>
       <RefTableName>exercise</RefTableName>
     </foreign-key>
-    <index id="369" parent="337" name="PRIMARY">
+    <index id="370" parent="337" name="PRIMARY">
       <ColNames>workout_plan_id
 exercise_id</ColNames>
       <Type>btree</Type>
       <Unique>1</Unique>
     </index>
-    <index id="370" parent="337" name="exercise_id">
+    <index id="371" parent="337" name="exercise_id">
       <ColNames>exercise_id</ColNames>
       <Type>btree</Type>
     </index>
-    <key id="371" parent="337" name="PRIMARY">
+    <key id="372" parent="337" name="PRIMARY">
       <NameSurrogate>1</NameSurrogate>
       <Primary>1</Primary>
       <UnderlyingIndexName>PRIMARY</UnderlyingIndexName>
     </key>
-    <column id="372" parent="338" name="id">
+    <column id="373" parent="338" name="id">
       <AutoIncrement>3</AutoIncrement>
       <NotNull>1</NotNull>
       <Position>1</Position>
       <StoredType>int(11)|0s</StoredType>
     </column>
-    <column id="373" parent="338" name="name">
+    <column id="374" parent="338" name="name">
       <NotNull>1</NotNull>
       <Position>2</Position>
       <StoredType>varchar(100)|0s</StoredType>
     </column>
-    <column id="374" parent="338" name="comment">
+    <column id="375" parent="338" name="comment">
       <Position>3</Position>
       <StoredType>text|0s</StoredType>
     </column>
-    <column id="375" parent="338" name="creation_date">
+    <column id="376" parent="338" name="creation_date">
       <Position>4</Position>
       <StoredType>date|0s</StoredType>
     </column>
-    <column id="376" parent="338" name="athlete_id">
+    <column id="377" parent="338" name="athlete_id">
       <NotNull>1</NotNull>
       <Position>5</Position>
       <StoredType>int(11)|0s</StoredType>
     </column>
-    <foreign-key id="377" parent="338" name="workout_plan_ibfk_1">
+    <foreign-key id="378" parent="338" name="workout_plan_ibfk_1">
       <ColNames>athlete_id</ColNames>
       <OnDelete>cascade</OnDelete>
       <RefColNames>user_id</RefColNames>
       <RefTableName>athlete</RefTableName>
     </foreign-key>
-    <index id="378" parent="338" name="PRIMARY">
+    <index id="379" parent="338" name="PRIMARY">
       <ColNames>id</ColNames>
       <Type>btree</Type>
       <Unique>1</Unique>
     </index>
-    <index id="379" parent="338" name="athlete_id">
+    <index id="380" parent="338" name="athlete_id">
       <ColNames>athlete_id</ColNames>
       <Type>btree</Type>
     </index>
-    <key id="380" parent="338" name="PRIMARY">
+    <key id="381" parent="338" name="PRIMARY">
       <NameSurrogate>1</NameSurrogate>
       <Primary>1</Primary>
       <UnderlyingIndexName>PRIMARY</UnderlyingIndexName>

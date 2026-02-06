@@ -5,6 +5,7 @@ public class Exercise {
     private String name;
     private String description;
     private MuscleGroup muscleGroup;
+    private String gifUrl;
 
     public Exercise(int id, String name, String description, MuscleGroup muscleGroup) {
         this.id = id;
@@ -12,6 +13,9 @@ public class Exercise {
         this.description = description;
         this.muscleGroup = muscleGroup;
     }
+
+    public String getGifUrl() { return gifUrl; }
+    public void setGifUrl(String gifUrl) { this.gifUrl = gifUrl; }
 
     public int getId() {
         return id;

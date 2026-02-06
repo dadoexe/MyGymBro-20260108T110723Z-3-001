@@ -53,6 +53,7 @@ public class RestApiExerciseDAO implements ExerciseDAO {
                         // --- MODIFICA FINE ---
 
                         Exercise model = new Exercise(fakeId, dto.name, description, mg);
+                        model.setGifUrl(dto.gifUrl);
                         modelList.add(model);
                     }
                 }

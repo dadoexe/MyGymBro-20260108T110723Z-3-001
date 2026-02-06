@@ -1,14 +1,15 @@
 package com.example.mygymbro.dao;
 
+import com.example.mygymbro.bean.WorkoutPlanBean; // Se serve
 import com.example.mygymbro.model.Athlete;
 import com.example.mygymbro.model.WorkoutPlan;
+import com.example.mygymbro.exceptions.DAOException; // Importa la tua eccezione
 
-import java.sql.SQLException;
 import java.util.List;
 
 public interface WorkoutPlanDAO {
-    void save(WorkoutPlan workoutPlan) throws SQLException;
-    List<WorkoutPlan> findByAthlete(Athlete athlete) throws SQLException;
-    void delete(int id) throws SQLException;
-    void update(WorkoutPlan plan) throws SQLException;
+    void save(WorkoutPlan plan) throws DAOException;
+    void update(WorkoutPlan plan) throws DAOException;
+    void delete(int planId) throws DAOException;
+    List<WorkoutPlan> findByAthlete(Athlete athlete) throws DAOException;
 }

@@ -63,5 +63,28 @@ public class GraphicViewFactory implements ViewFactory {
             return null;
         }
     }
+    @Override
+    public WorkoutPreviewView createWorkoutPreviewView() {
+        return loadView("/com/example/mygymbro/view/view/WorkoutPreview.fxml");
+    }
+
+    @Override
+    public LiveSessionView createLiveSessionView() {
+        return loadView("/com/example/mygymbro/view/view/LiveSessionView.fxml"); // O LiveSession.fxml, controlla il nome file!
+    }
+
+    // Metodo helper (se lo stai usando, altrimenti usa il try-catch classico con FXMLLoader)
+    private <T> T loadView(String path) {
+        try {
+            javafx.fxml.FXMLLoader loader = new javafx.fxml.FXMLLoader(getClass().getResource(path));
+            javafx.scene.Parent root = loader.load();
+            GraphicView view = loader.getController();
+            view.setRoot(root);
+            return (T) view;
+        } catch (Exception e) {
+            e.printStackTrace();
+            return null;
+        }
+    }
 
 }

@@ -25,4 +25,16 @@ public class CliViewFactory implements ViewFactory {
     public TrainerView createTrainerView() {
         return new CliTrainerView();
     }
+    @Override
+    public WorkoutPreviewView createWorkoutPreviewView() {
+        // Se non hai ancora creato CliWorkoutPreviewView, per ora ritorna null
+        // return new CliWorkoutPreviewView();
+        return null;
+    }
+
+    @Override
+    public LiveSessionView createLiveSessionView() {
+        return new CliLiveSessionView();
+    }
+
 }

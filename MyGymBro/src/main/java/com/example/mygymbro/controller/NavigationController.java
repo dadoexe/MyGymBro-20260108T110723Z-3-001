@@ -5,6 +5,7 @@ import com.example.mygymbro.bean.WorkoutExerciseBean;
 import com.example.mygymbro.bean.WorkoutPlanBean;
 import com.example.mygymbro.dao.DAOFactory;
 import com.example.mygymbro.dao.WorkoutPlanDAO;
+import com.example.mygymbro.exceptions.DAOException;
 import com.example.mygymbro.model.Athlete;
 import com.example.mygymbro.model.WorkoutPlan;
 import com.example.mygymbro.views.AthleteView;
@@ -56,6 +57,14 @@ public class NavigationController implements Controller {
             view.showError("Impossibile caricare le schede.");
         }
     }
+    public void openPlanPreview(WorkoutPlanBean plan) {
+        ApplicationController.getInstance().loadWorkoutPreview(plan);
+    }
+    public void startLiveSession(WorkoutPlanBean plan) {
+        if (plan == null) return;
+        // Deleghiamo all'ApplicationController il cambio di scena (o di vista CLI)
+        ApplicationController.getInstance().loadLiveSession(plan);
+    }
 
     // --- METODI DI AZIONE (Standardizzati per CLI e GUI) ---
     public void handleCreateNewPlan() {
@@ -72,16 +81,13 @@ public class NavigationController implements Controller {
     // Rinominato da 'handleDeletePlan' a 'deletePlan' per coerenza con la View CLI
     public void deletePlan(WorkoutPlanBean planBean) {
         try {
-            // Nota: Assicurati che il tuo DAO abbia il metodo deleteById o delete(int)
-            // Se nel DAO si chiama deletePlan, cambia qui sotto.
             workoutPlanDAO.delete(planBean.getId());
 
             view.showSuccess("Scheda '" + planBean.getName() + "' eliminata.");
 
-            // Ricarichiamo i dati aggiornati
             loadDashboardData();
 
-        } catch (SQLException e) {
+        } catch (DAOException e) { // <--- CORREZIONE QUI: SQLException -> DAOException
             e.printStackTrace();
             view.showError("Errore cancellazione: " + e.getMessage());
         }
@@ -124,6 +130,7 @@ public class NavigationController implements Controller {
                     // Logica difensiva per il nome esercizio
                     if (modelEx.getExercise() != null) {
                         exBean.setExerciseName(modelEx.getExercise().getName());
+
                     } else if (modelEx.getExerciseDefinition() != null) {
                         exBean.setExerciseName(modelEx.getExerciseDefinition().getName());
                     } else {

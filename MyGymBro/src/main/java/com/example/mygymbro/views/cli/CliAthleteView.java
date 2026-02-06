@@ -1,8 +1,8 @@
 package com.example.mygymbro.views.cli;
 
-import com.example.mygymbro.bean.WorkoutExerciseBean;
 import com.example.mygymbro.bean.WorkoutPlanBean;
 import com.example.mygymbro.controller.NavigationController;
+import com.example.mygymbro.controller.SessionManager;
 import com.example.mygymbro.views.AthleteView;
 
 import java.util.List;
@@ -12,47 +12,56 @@ public class CliAthleteView implements AthleteView, CliView {
 
     private NavigationController listener;
     private Scanner scanner;
-
-    // Cache locale per ricordare le schede scaricate
     private List<WorkoutPlanBean> myPlansCache;
 
     public CliAthleteView() {
         this.scanner = new Scanner(System.in);
     }
 
-    // --- METODI View ---
-    @Override public void showSuccess(String msg) { System.out.println("[OK] " + msg); }
-    @Override public void showError(String msg) { System.out.println("[ERR] " + msg); }
+    @Override public void showSuccess(String msg) { System.out.println("✅ " + msg); }
+    @Override public void showError(String msg) { System.out.println("❌ " + msg); }
 
     @Override
     public void run() {
-        // 1. FIX DOPPIA STAMPA: Carichiamo i dati UNA SOLA VOLTA fuori dal loop
-        if (listener != null) {
+        // RIMOSSO IL BLOCCO 'FIX BUFFER' CHE CAUSAVA IL DOPPIO INVIO
+        // Niente System.in.available(), niente hasNextLine().
+
+        // Carichiamo i dati solo se non li abbiamo (evita ricaricamenti doppi se torni indietro)
+        if (myPlansCache == null && listener != null) {
             listener.loadDashboardData();
         }
 
         boolean stay = true;
         while (stay) {
-            // Menu principale pulito
+            // Controllo Sessione: se sloggato, esci subito
+            if (SessionManager.getInstance().getCurrentUser() == null) {
+                stay = false;
+                break;
+            }
+
             System.out.println("\n=== MENU PRINCIPALE ===");
             System.out.println("1. Crea Nuova Scheda");
-            System.out.println("2. Gestisci le tue schede (Visualizza/Modifica/Elimina)");
+            System.out.println("2. Gestisci le tue schede");
             System.out.println("0. Logout");
             System.out.print("Scelta > ");
 
-            String choice = scanner.nextLine();
+            String choice = scanner.nextLine().trim();
+            if (choice.isEmpty()) continue; // Ignora invii a vuoto senza bloccare
+
             switch (choice) {
                 case "1":
+                    stay = false; // Esci dal loop PRIMA di cambiare vista
                     if (listener != null) listener.loadWorkoutBuilder();
-                    stay = false;
                     break;
                 case "2":
-                    // Entriamo nel sottomenu di gestione
-                    handleManagePlans();
+                    // Se handleManagePlans ritorna true, significa che dobbiamo chiudere anche questo menu
+                    if (handleManagePlans()) {
+                        stay = false;
+                    }
                     break;
                 case "0":
-                    if (listener != null) listener.logout();
                     stay = false;
+                    if (listener != null) listener.logout();
                     break;
                 default:
                     System.out.println("Comando non valido.");
@@ -60,122 +69,84 @@ public class CliAthleteView implements AthleteView, CliView {
         }
     }
 
-    // --- LOGICA DI GESTIONE SCHEDE ---
-    private void handleManagePlans() {
+    // Ritorna TRUE se l'utente ha scelto un'azione che cambia vista (es. Live Session)
+    private boolean handleManagePlans() {
         if (myPlansCache == null || myPlansCache.isEmpty()) {
             System.out.println("\n(Non hai ancora nessuna scheda salvata)");
-            return;
+            return false;
         }
 
         boolean managing = true;
         while (managing) {
+            if (SessionManager.getInstance().getCurrentUser() == null) return true;
+
             System.out.println("\n--- SELEZIONA UNA SCHEDA ---");
             for (int i = 0; i < myPlansCache.size(); i++) {
                 System.out.println((i + 1) + ". " + myPlansCache.get(i).getName());
             }
-            System.out.println("0. Indietro al Menu Principale");
+            System.out.println("0. Indietro");
             System.out.print("Numero > ");
 
+            String input = scanner.nextLine().trim();
+            if (input.isEmpty()) continue;
+
             try {
-                int selection = Integer.parseInt(scanner.nextLine());
+                int selection = Integer.parseInt(input);
 
                 if (selection == 0) {
-                    managing = false; // Esce dal loop e torna al menu principale
+                    managing = false; // Torna al menu principale
                 } else if (selection > 0 && selection <= myPlansCache.size()) {
-                    // Recuperiamo la scheda scelta
                     WorkoutPlanBean selectedPlan = myPlansCache.get(selection - 1);
 
-                    // MOSTRA I DETTAGLI (Esercizi, ecc.)
-                    printPlanDetails(selectedPlan);
-
-                    // CHIEDI AZIONE
-                    askActionForPlan(selectedPlan);
-
-                    // Se abbiamo eliminato o modificato, usciamo per ricaricare i dati
-                    // (Opzionale: potremmo ricaricare e restare qui, ma uscire è più sicuro)
-                    managing = false;
+                    // Se askActionForPlan ritorna TRUE, usciamo da tutto per cambiare vista
+                    if (askActionForPlan(selectedPlan)) {
+                        return true;
+                    }
                 } else {
                     System.out.println("Numero non valido.");
                 }
             } catch (NumberFormatException e) {
-                System.out.println("Input non valido.");
+                System.out.println("Inserisci un numero valido.");
             }
         }
+        return false;
     }
 
-    private void printPlanDetails(WorkoutPlanBean plan) {
-        System.out.println("\n==========================================");
-        System.out.println(" SCHEDA: " + plan.getName().toUpperCase());
-        System.out.println(" Descrizione: " + (plan.getComment() != null ? plan.getComment() : "---"));
-        System.out.println("==========================================");
-
-        List<WorkoutExerciseBean> exercises = plan.getExerciseList();
-        if (exercises == null || exercises.isEmpty()) {
-            System.out.println(" (Nessun esercizio presente)");
-        } else {
-            System.out.printf("%-25s | %-10s | %-5s | %-5s\n", "Esercizio", "Gruppo", "SetxRep", "Rec");
-            System.out.println("------------------------------------------------------------");
-            for (WorkoutExerciseBean ex : exercises) {
-                String setRep = ex.getSets() + "x" + ex.getReps();
-                System.out.printf("%-25s | %-10s | %-7s | %ds\n",
-                        truncate(ex.getExerciseName(), 25),
-                        ex.getMuscleGroup(),
-                        setRep,
-                        ex.getRestTime());
-            }
-        }
-        System.out.println("==========================================\n");
-    }
-
-    private void askActionForPlan(WorkoutPlanBean plan) {
-        System.out.println("Cosa vuoi fare con questa scheda?");
-        System.out.println("1. MODIFICA (Aggiungi/Rimuovi esercizi)");
-        System.out.println("2. ELIMINA DEFINITIVAMENTE");
-        System.out.println("0. Nulla (Indietro)");
+    // Ritorna TRUE se cambiamo vista
+    private boolean askActionForPlan(WorkoutPlanBean plan) {
+        System.out.println("\nScheda: " + plan.getName());
+        System.out.println("1. Modifica");
+        System.out.println("2. Elimina");
+        System.out.println("3. AVVIA LIVE SESSION");
+        System.out.println("0. Indietro");
         System.out.print("Azione > ");
 
-        String action = scanner.nextLine();
+        String action = scanner.nextLine().trim();
         switch (action) {
             case "1":
-                System.out.println("Caricamento builder...");
                 if (listener != null) listener.modifyPlan(plan);
-                break;
+                return true; // CAMBIO VISTA
             case "2":
-                System.out.print("Sei VERAMENTE sicuro? (scrivi 'si'): ");
-                if (scanner.nextLine().equalsIgnoreCase("si")) {
+                System.out.print("Sicuro? (si/no): ");
+                if (scanner.nextLine().trim().equalsIgnoreCase("si")) {
                     if (listener != null) listener.deletePlan(plan);
-                    System.out.println(">>> Scheda eliminata.");
                 }
-                break;
+                return false; // RESTA QUI
+            case "3":
+                System.out.println(">>> Avvio allenamento...");
+                if (listener != null) listener.startLiveSession(plan);
+                // Quando la live session finisce, torneremo qui.
+                // Siccome la LiveSession crea la sua UI e poi la distrugge,
+                // possiamo decidere se tornare al menu principale (true) o restare qui (false).
+                // Per pulizia, torniamo al menu principale:
+                return true;
             default:
-                System.out.println("Nessuna azione effettuata.");
+                return false;
         }
     }
 
-    // Helper per tagliare stringhe troppo lunghe nella tabella
-    private String truncate(String str, int width) {
-        if (str == null) return "";
-        if (str.length() > width) return str.substring(0, width - 3) + "...";
-        return str;
-    }
-
-    // --- IMPLEMENTAZIONE INTERFACCIA ---
-
-    @Override
-    public void setListener(NavigationController listener) {
-        this.listener = listener;
-    }
-
-    @Override
-    public void updateWelcomeMessage(String msg) {
-        // Stampiamo solo se è la prima volta o se serve davvero
-        System.out.println("Benvenuto " + msg);
-    }
-
-    @Override
-    public void updateWorkoutList(List<WorkoutPlanBean> workoutPlans) {
-        // Questo metodo viene chiamato dal Controller quando i dati sono pronti.
-        // Ci limitiamo a salvare la lista. NON stampiamo nulla qui per evitare doppioni.
-        this.myPlansCache = workoutPlans;
-    }
+    // ... Interface methods ...
+    @Override public void setListener(NavigationController l) { this.listener = l; }
+    @Override public void updateWelcomeMessage(String m) {}
+    @Override public void updateWorkoutList(List<WorkoutPlanBean> l) { this.myPlansCache = l; }
 }

@@ -160,6 +160,11 @@ public class GraphicTrainerView implements TrainerView, GraphicView {
         return listWorkoutPlans.getSelectionModel().getSelectedItem();
     }
 
+    @Override
+    public void setSelectedAthlete(AthleteBean athlete) {
+        return;
+    }
+
     // --- METODI MESSAGGI & VIEW ---
 
     @Override

@@ -14,6 +14,6 @@ public interface TrainerView extends View{
     void updateWelcomeMessage(String msg);
     AthleteBean getSelectedAthlete();
     WorkoutPlanBean getSelectedPlan();
-
+    void setSelectedAthlete(AthleteBean athlete);
 
 }

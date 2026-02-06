@@ -1,9 +1,6 @@
 package com.example.mygymbro.controller;
 
-import com.example.mygymbro.bean.ExerciseBean;
-import com.example.mygymbro.bean.UserBean;
-import com.example.mygymbro.bean.WorkoutExerciseBean;
-import com.example.mygymbro.bean.WorkoutPlanBean;
+import com.example.mygymbro.bean.*;
 import com.example.mygymbro.dao.DAOFactory;
 import com.example.mygymbro.dao.ExerciseDAO;
 import com.example.mygymbro.dao.WorkoutPlanDAO;
@@ -22,7 +19,7 @@ public class PlanManagerController implements Controller {
     private WorkoutPlanDAO workoutPlanDAO;
     private ExerciseDAO exerciseDAO;
     private WorkoutPlanBean currentPlan;
-    private UserBean targetAthlete; // Fondamentale per il Trainer
+    private AthleteBean targetAthlete; // Fondamentale per il Trainer
 
     // --- COSTRUTTORE 1: CREAZIONE NUOVO PIANO ---
     public PlanManagerController(WorkoutBuilderView view) {
@@ -44,7 +41,7 @@ public class PlanManagerController implements Controller {
         loadAvailableExercises();
     }
 
-    public void setTargetAthlete(UserBean athlete) {
+    public void setTargetAthlete(AthleteBean athlete) {
         this.targetAthlete = athlete;
     }
 
@@ -52,11 +49,10 @@ public class PlanManagerController implements Controller {
     // Questo metodo viene chiamato quando premi "SALVA" nella grafica
     public void handleSavePlan() {
         try {
-            // 1. Recupera TUTTI i dati dalla View in un colpo solo
-            // (Grazie al metodo che abbiamo appena aggiunto nella View)
+            // 1. Recupera dati
             WorkoutPlanBean formData = view.getWorkoutPlanBean();
 
-            // 2. Aggiorna il currentPlan (mantenendo l'ID se esiste)
+            // 2. Aggiorna bean corrente
             currentPlan.setName(formData.getName());
             currentPlan.setComment(formData.getComment());
             currentPlan.setExerciseList(formData.getExerciseList());
@@ -71,11 +67,9 @@ public class PlanManagerController implements Controller {
                 return;
             }
 
-            // 4. Conversione Bean -> Model
-            // NOTA: toModelWorkoutPlan gestisce già internamente l'assegnazione dell'ID utente (Trainer o Atleta)
+            // 4. Conversione e Salvataggio
             WorkoutPlan planModel = toModelWorkoutPlan(currentPlan);
 
-            // 5. Salvataggio su DB
             if (currentPlan.getId() > 0) {
                 workoutPlanDAO.update(planModel);
             } else {
@@ -84,8 +78,16 @@ public class PlanManagerController implements Controller {
 
             view.showSuccess("Scheda salvata correttamente!");
 
-            // 6. Torna alla dashboard corretta
-            ApplicationController.getInstance().loadHomeBasedOnRole();
+            // --- 5. NAVIGAZIONE INTELLIGENTE (Qui sta il trucco!) ---
+            UserBean currentUser = SessionManager.getInstance().getCurrentUser();
+
+            if ("TRAINER".equals(currentUser.getRole()) && this.targetAthlete != null) {
+                // SE SONO TRAINER: Torno alla dashboard FORZANDO la selezione del cliente
+                ApplicationController.getInstance().loadTrainerDashboard(this.targetAthlete);
+            } else {
+                // SE SONO ATLETA (o trainer senza target specifico): Comportamento standard
+                ApplicationController.getInstance().loadHomeBasedOnRole();
+            }
 
         } catch (Exception e) {
             e.printStackTrace();
@@ -95,7 +97,17 @@ public class PlanManagerController implements Controller {
 
     // --- ANNULLA ---
     public void handleCancel() {
-        ApplicationController.getInstance().loadHomeBasedOnRole();
+
+        UserBean currentUser = SessionManager.getInstance().getCurrentUser();
+
+        // LOGICA INTELLIGENTE DI RITORNO (Identica al Save)
+        if ("TRAINER".equals(currentUser.getRole()) && this.targetAthlete != null) {
+            // Se sono un Trainer e stavo lavorando su un cliente, TORNA AL CLIENTE
+            ApplicationController.getInstance().loadTrainerDashboard(this.targetAthlete);
+        } else {
+            // Altrimenti comportamento standard
+            ApplicationController.getInstance().loadHomeBasedOnRole();
+        }
     }
 
     // Metodo legacy per la CLI (se serve), lo mappiamo su handleSavePlan

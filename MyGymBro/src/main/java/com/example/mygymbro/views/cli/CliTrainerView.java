@@ -13,11 +13,9 @@ public class CliTrainerView implements TrainerView, CliView {
     private TrainerController listener;
     private final Scanner scanner;
 
-    // Dati locali per il menu CLI
     private List<AthleteBean> cachedAthletes;
     private List<WorkoutPlanBean> cachedPlans;
 
-    // Selezione corrente
     private AthleteBean selectedAthlete;
     private WorkoutPlanBean selectedPlan;
 
@@ -29,43 +27,42 @@ public class CliTrainerView implements TrainerView, CliView {
     public void run() {
         boolean running = true;
 
-        // Carica i dati iniziali appena parte la vista
+        // Carica i dati iniziali (ma non stampa la lista completa subito, solo header)
         if (listener != null) listener.loadDashboardData();
 
         while (running) {
             System.out.println("\n--- DASHBOARD TRAINER ---");
-            System.out.println("Cliente Selezionato: " + (selectedAthlete != null ? selectedAthlete.getUsername() : "NESSUNO"));
+            System.out.println("Cliente Attivo: " + (selectedAthlete != null ? "👤 " + selectedAthlete.getUsername().toUpperCase() : "❌ NESSUNO"));
             System.out.println("-------------------------");
-            System.out.println("1. Visualizza Lista Clienti");
-            System.out.println("2. Seleziona Cliente (per operare)");
-            System.out.println("3. Visualizza Schede Cliente");
-            System.out.println("4. Assegna Nuova Scheda");
-            System.out.println("5. Modifica Scheda Esistente");
-            System.out.println("0. Logout");
-            System.out.print("Scelta: ");
 
-            String choice = scanner.nextLine();
+            // MENU OTTIMIZZATO
+            System.out.println("1. Seleziona/Cambia Cliente"); // Accorpa visualizzazione e selezione
+            System.out.println("2. Visualizza Schede Cliente");
+            System.out.println("3. Assegna Nuova Scheda");
+            System.out.println("4. Modifica Scheda Esistente");
+            System.out.println("0. Logout");
+            System.out.print("Scelta > ");
+
+            String choice = scanner.nextLine().trim();
 
             switch (choice) {
                 case "1":
-                    if (listener != null) listener.loadDashboardData(); // Ricarica e stampa
-                    break;
-                case "2":
                     handleSelectAthlete();
                     break;
-                case "3":
+                case "2":
                     if (checkSelection()) {
                         listener.loadPlansForAthlete(selectedAthlete);
                     }
                     break;
-                case "4":
+                case "3":
                     if (checkSelection()) {
+                        // Quando torneremo qui, la selezione sarà persa SE non la passiamo
+                        // (vedi modifiche successive)
                         listener.createNewPlan();
-                        // Nota: Qui il flusso passerà al WorkoutBuilderView (CLI o GUI)
-                        // Quando tornerà indietro, running sarà ancora true
+                        running = false; // Usciamo dal loop perché ApplicationController cambierà view
                     }
                     break;
-                case "5":
+                case "4":
                     handleModifyPlan();
                     break;
                 case "0":
@@ -78,26 +75,31 @@ public class CliTrainerView implements TrainerView, CliView {
         }
     }
 
-    // --- LOGICA CLI INTERNA ---
+    // --- LOGICA INTERNA ---
 
     private void handleSelectAthlete() {
+        // Mostriamo la lista QUI, solo quando serve selezionare
         if (cachedAthletes == null || cachedAthletes.isEmpty()) {
-            System.out.println("⚠️ Nessun cliente in lista. Premi '1' per aggiornare.");
+            System.out.println("⚠️ Nessun cliente disponibile.");
             return;
         }
 
-        System.out.println("Inserisci l'ID del cliente da selezionare:");
-        // Per semplicità stampiamo indice e nome, ma usiamo l'ID reale o l'indice lista
+        System.out.println("\n--- SELEZIONA CLIENTE ---");
         for (int i = 0; i < cachedAthletes.size(); i++) {
-            System.out.println((i + 1) + ". " + cachedAthletes.get(i).getUsername());
+            System.out.println((i + 1) + ". " + cachedAthletes.get(i).getUsername() +
+                    " (" + cachedAthletes.get(i).getNome() + " " + cachedAthletes.get(i).getCognome() + ")");
         }
+        System.out.println("0. Annulla");
+        System.out.print("Numero > ");
 
         try {
             int index = Integer.parseInt(scanner.nextLine()) - 1;
+            if (index == -1) return; // Annulla
+
             if (index >= 0 && index < cachedAthletes.size()) {
                 this.selectedAthlete = cachedAthletes.get(index);
-                System.out.println("✅ Cliente selezionato: " + selectedAthlete.getUsername());
-                // Carichiamo subito le schede per averle pronte
+                System.out.println("✅ Cliente attivo: " + selectedAthlete.getUsername());
+                // Carichiamo subito le schede in background
                 listener.loadPlansForAthlete(selectedAthlete);
             } else {
                 System.out.println("Indice non valido.");
@@ -115,16 +117,22 @@ public class CliTrainerView implements TrainerView, CliView {
             return;
         }
 
-        System.out.println("Quale scheda vuoi modificare?");
+        System.out.println("\n--- MODIFICA SCHEDA ---");
         for (int i = 0; i < cachedPlans.size(); i++) {
             System.out.println((i + 1) + ". " + cachedPlans.get(i).getName());
         }
+        System.out.println("0. Annulla");
+        System.out.print("Numero > ");
 
         try {
             int index = Integer.parseInt(scanner.nextLine()) - 1;
+            if (index == -1) return;
+
             if (index >= 0 && index < cachedPlans.size()) {
                 this.selectedPlan = cachedPlans.get(index);
                 listener.modifySelectedPlan();
+                // NON mettiamo running=false qui se modifySelectedPlan cambia view,
+                // ma di solito modifyPlan lo fa. Se lo fa, aggiungi running=false;
             } else {
                 System.out.println("Indice non valido.");
             }
@@ -135,61 +143,54 @@ public class CliTrainerView implements TrainerView, CliView {
 
     private boolean checkSelection() {
         if (selectedAthlete == null) {
-            System.out.println("⚠️ DEVI PRIMA SELEZIONARE UN CLIENTE (Opzione 2)");
+            System.out.println("⚠️ DEVI PRIMA SELEZIONARE UN CLIENTE (Opzione 1)");
             return false;
         }
         return true;
     }
 
-    // --- IMPLEMENTAZIONE INTERFACCIA TRAINERVIEW ---
+    // --- IMPLEMENTAZIONE INTERFACCIA ---
+    @Override public void setListener(TrainerController controller) { this.listener = controller; }
 
-    @Override
-    public void setListener(TrainerController controller) {
-        this.listener = controller;
-    }
-
-    @Override
-    public void showAthletesList(List<AthleteBean> athletes) {
-        this.cachedAthletes = athletes;
-        System.out.println("\n--- LISTA CLIENTI ---");
-        if (athletes.isEmpty()) {
-            System.out.println("(Nessun cliente trovato)");
-        } else {
-            for (AthleteBean a : athletes) {
-                System.out.println("👤 " + a.getUsername() + " (" + a.getNome() + " " + a.getCognome() + ")");
-            }
-        }
-    }
+    // Qui salviamo la lista ma NON la stampiamo (la stampiamo solo su richiesta nel handleSelect)
+    @Override public void showAthletesList(List<AthleteBean> athletes) { this.cachedAthletes = athletes; }
 
     @Override
     public void showAthletePlans(List<WorkoutPlanBean> plans) {
         this.cachedPlans = plans;
+
+        // Header
         System.out.println("\n--- SCHEDE DI " + (selectedAthlete != null ? selectedAthlete.getUsername() : "???") + " ---");
+
+        // Feedback sul conteggio
         if (plans == null || plans.isEmpty()) {
             System.out.println("(Nessuna scheda assegnata)");
         } else {
-            for (WorkoutPlanBean p : plans) {
-                System.out.println("📄 " + p.getName() + " - " + p.getComment());
+            System.out.println(">> Trovate " + plans.size() + " schede:");
+
+            // --- ECCO IL PEZZO CHE MANCAVA ---
+            for (int i = 0; i < plans.size(); i++) {
+                WorkoutPlanBean p = plans.get(i);
+                System.out.println("   " + (i + 1) + ". " + p.getName() + " (" + p.getComment() + ")");
             }
+            // ---------------------------------
         }
     }
 
-    @Override
-    public void updateWelcomeMessage(String msg) {
-        System.out.println("Benvenuto Coach " + msg + "!");
+    @Override public void updateWelcomeMessage(String msg) { /* Opzionale stampa benvenuto */ }
+    @Override public AthleteBean getSelectedAthlete() { return this.selectedAthlete; }
+    @Override public WorkoutPlanBean getSelectedPlan() { return this.selectedPlan; }
+
+    // NUOVO METODO IMPLEMENTATO
+    @Override public void setSelectedAthlete(AthleteBean athlete) {
+        this.selectedAthlete = athlete;
+        // Se ripristiniamo un atleta, ricarichiamo anche le sue schede
+        if (listener != null && athlete != null) {
+            listener.loadPlansForAthlete(athlete);
+        }
     }
 
-    @Override
-    public AthleteBean getSelectedAthlete() {
-        return this.selectedAthlete;
-    }
-
-    @Override
-    public WorkoutPlanBean getSelectedPlan() {
-        return this.selectedPlan;
-    }
-
-    @Override
+@Override
     public void showSuccess(String msg) {
         System.out.println("✅ SUCCESSO: " + msg);
     }
@@ -199,9 +200,4 @@ public class CliTrainerView implements TrainerView, CliView {
         System.out.println("❌ ERRORE: " + msg);
     }
 
-    // Metodo legacy per compatibilità
-
-    public void updateAthletePrograms(List<WorkoutPlanBean> workoutPlans) {
-        showAthletePlans(workoutPlans);
-    }
 }

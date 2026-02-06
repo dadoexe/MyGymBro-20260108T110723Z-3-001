@@ -3,14 +3,12 @@ package com.example.mygymbro.controller;
 import com.example.mygymbro.bean.UserBean;
 import com.example.mygymbro.dao.DAOFactory;
 import com.example.mygymbro.dao.UserDAO;
-
+import com.example.mygymbro.exceptions.InvalidCredentialsException; // <--- Importante!
+import com.example.mygymbro.model.PersonalTrainer;
 import com.example.mygymbro.model.User;
-
 import com.example.mygymbro.views.LoginView;
 
-
 import java.sql.SQLException;
-
 
 public class LoginController implements Controller {
 
@@ -19,7 +17,6 @@ public class LoginController implements Controller {
 
     public LoginController(LoginView view) {
         this.view = view;
-        // Usiamo la Factory per ottenere il DAO corretto
         this.userDAO = DAOFactory.getUserDAO();
     }
 
@@ -33,15 +30,18 @@ public class LoginController implements Controller {
         }
 
         try {
-            // 1. Recupera l'utente dal DAO (che ora distingue User e PersonalTrainer!)
+            // 1. Chiediamo al DAO (Database)
             User userModel = userDAO.findByUsername(username);
 
+            // 2. LOGICA DI BUSINESS CON ECCEZIONE
+            // Se l'utente non esiste O la password non corrisponde -> LANCIA ECCEZIONE
             if (userModel == null || !userModel.getPassword().equals(password)) {
-                view.showError("Credenziali non valide.");
-                return;
+                throw new InvalidCredentialsException("Credenziali non valide (Username o Password errati).");
             }
 
-            // 2. Riempi il Bean
+            // --- Se siamo qui, il login è valido ---
+
+            // 3. Riempi il Bean
             UserBean userBean = new UserBean();
             userBean.setId(userModel.getId());
             userBean.setUsername(userModel.getUsername());
@@ -49,24 +49,28 @@ public class LoginController implements Controller {
             userBean.setCognome(userModel.getCognome());
             userBean.setEmail(userModel.getEmail());
 
-            // --- 3. ASSEGNA IL RUOLO ---
-            if (userModel instanceof com.example.mygymbro.model.PersonalTrainer) {
+            // 4. Assegna Ruolo
+            if (userModel instanceof PersonalTrainer) {
                 userBean.setRole("TRAINER");
             } else {
                 userBean.setRole("ATHLETE");
             }
 
-            // 4. Salva in sessione
+            // 5. Login in Sessione e Cambio Schermata
             SessionManager.getInstance().login(userBean);
-
             view.showSuccess("Login effettuato! Ruolo: " + userBean.getRole());
-
-            // 5. CHIAMA LO SMISTATORE (Non più loadHome diretta!)
             ApplicationController.getInstance().loadHomeBasedOnRole();
+
+        } catch (InvalidCredentialsException e) {
+            // REQUISITO SODDISFATTO: Catturiamo la nostra eccezione personalizzata
+            view.showError("Accesso Negato: " + e.getMessage());
 
         } catch (SQLException e) {
             e.printStackTrace();
-            view.showError("Errore Database.");
+            view.showError("Errore tecnico del Database.");
+        } catch (Exception e) {
+            e.printStackTrace();
+            view.showError("Errore generico di sistema.");
         }
     }
 
@@ -74,6 +78,4 @@ public class LoginController implements Controller {
     public void dispose() {
         this.userDAO = null;
     }
-
-
 }

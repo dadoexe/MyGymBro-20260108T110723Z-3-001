@@ -1,48 +1,46 @@
 package com.example.mygymbro.dao;
 
-/**
- * Factory Pattern
- * Questa classe è l'unico punto dell'applicazione che conosce la verità:
- * stiamo usando un Database vero o stiamo fingendo (Demo)?
- */
+
 public class DAOFactory {
 
-    // --- MODIFICA 1: Rimosso 'final' così possiamo cambiarlo a runtime ---
     private static boolean isDemoMode = false;
 
-    // --- MODIFICA 2: Aggiunto il metodo Setter per il Launcher ---
+    // --- NUOVA CONFIGURAZIONE ---
+    // Imposta questo a TRUE per testare il salvataggio su FILE per l'esame.
+    // Imposta a FALSE per usare MySQL.
+    public static boolean CONF_USE_FILESYSTEM = true;
+
     public static void setDemoMode(boolean active) {
         isDemoMode = active;
-        System.out.println("DAOFactory: Modalità DEMO impostata su " + active);
+        System.out.println("DAOFactory: Modalità DEMO (RAM) impostata su " + active);
     }
 
-    /**
-     * Restituisce l'implementazione corretta per la gestione Utenti
-     */
     public static UserDAO getUserDAO() {
         if (isDemoMode) {
             return new InMemoryUserDAO();
         } else {
+            // Per UserDAO teniamo MySQL (o puoi fare FileSystemUserDAO se vuoi, ma ne basta uno)
             return new MySQLUserDAO();
         }
     }
 
-    /**
-     * Restituisce l'implementazione corretta per i Piani di Allenamento
-     */
     public static WorkoutPlanDAO getWorkoutPlanDAO() {
+        // 1. Priorità alla DEMO MODE (Requisito: In-Memory Only)
         if (isDemoMode) {
             return new InMemoryWorkoutPlanDAO();
+        }
+
+        // 2. Se siamo in FULL MODE, scegliamo la persistenza
+        if (CONF_USE_FILESYSTEM) {
+            System.out.println("DAOFactory: Utilizzo FileSystemDAO");
+            return new FileSystemWorkoutPlanDAO(); // <--- Il nuovo DAO
         } else {
+            System.out.println("DAOFactory: Utilizzo MySQLDAO");
             return new MySQLWorkoutPlanDAO();
         }
     }
 
-    /**
-     * Restituisce l'implementazione per gli Esercizi.
-     */
     public static ExerciseDAO getExerciseDAO() {
-        // L'API esterna va bene per entrambi i casi
         return new RestApiExerciseDAO();
     }
 }

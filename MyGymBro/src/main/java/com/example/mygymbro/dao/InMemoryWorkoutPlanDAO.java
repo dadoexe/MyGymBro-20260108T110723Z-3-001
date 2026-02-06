@@ -1,5 +1,6 @@
 package com.example.mygymbro.dao;
 
+import com.example.mygymbro.exceptions.DAOException;
 import com.example.mygymbro.model.Athlete;
 import com.example.mygymbro.model.WorkoutPlan;
 
@@ -13,7 +14,7 @@ public class InMemoryWorkoutPlanDAO implements WorkoutPlanDAO {
     private static List<WorkoutPlan> ramPlans = new ArrayList<>();
 
     @Override
-    public void save(WorkoutPlan plan) throws SQLException {
+    public void save(WorkoutPlan plan) throws DAOException {
         // Se è una nuova scheda (ID 0 o non esiste), assegniamo un nuovo ID
         if (plan.getId() == 0) {
             int newId = ramPlans.isEmpty() ? 1 : ramPlans.get(ramPlans.size() - 1).getId() + 1;
@@ -29,7 +30,7 @@ public class InMemoryWorkoutPlanDAO implements WorkoutPlanDAO {
     }
 
     @Override
-    public List<WorkoutPlan> findByAthlete(Athlete athlete) throws SQLException {
+    public List<WorkoutPlan> findByAthlete(Athlete athlete) throws DAOException {
         if (athlete == null) return new ArrayList<>();
 
         return ramPlans.stream()
@@ -39,7 +40,7 @@ public class InMemoryWorkoutPlanDAO implements WorkoutPlanDAO {
     }
 
     @Override
-    public void delete(int id) throws SQLException {
+    public void delete(int id) throws DAOException {
         // Rimuove la scheda se l'ID corrisponde
         boolean removed = ramPlans.removeIf(p -> p.getId() == id);
         if (removed) {
@@ -48,7 +49,7 @@ public class InMemoryWorkoutPlanDAO implements WorkoutPlanDAO {
     }
 
     @Override
-    public void update(WorkoutPlan plan) throws SQLException {
+    public void update(WorkoutPlan plan) throws DAOException {
         save(plan); // In memoria, update e save sono la stessa cosa (sovrascrittura)
     }
 }
