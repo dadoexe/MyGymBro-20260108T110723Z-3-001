@@ -170,6 +170,7 @@ public final class ApplicationController implements Controller {//singleton
         }
     }
 
+
     public void logout() {
         // Pulisco la sessione
         SessionManager.getInstance().logout();

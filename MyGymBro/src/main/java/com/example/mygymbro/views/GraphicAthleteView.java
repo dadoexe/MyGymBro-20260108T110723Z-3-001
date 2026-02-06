@@ -62,6 +62,7 @@ public class GraphicAthleteView implements AthleteView {
         if (listener != null) {
             listener.handleLogout();
         }
+
     }
 
     // --- IMPLEMENTAZIONE METODI DELL'INTERFACCIA ---
@@ -123,6 +124,7 @@ public class GraphicAthleteView implements AthleteView {
             listWorkouts.getItems().add(displayString);
         }
     }
+
 
     @FXML
     public void handleDeletePlan() {

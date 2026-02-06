@@ -44,4 +44,9 @@ public class InMemoryWorkoutPlanDAO implements WorkoutPlanDAO {
         ramPlans.removeIf(p -> p.getId() == id);
 
     }
+
+    @Override
+    public void update(WorkoutPlan plan) throws SQLException {
+
+    }
 }

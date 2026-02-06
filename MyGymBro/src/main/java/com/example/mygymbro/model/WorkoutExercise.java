@@ -1,5 +1,7 @@
 package com.example.mygymbro.model;
 
+import com.example.mygymbro.bean.WorkoutPlanBean;
+
 /**
  * Questa classe rappresenta un esercizio all'interno di una scheda specifica.
  * Contiene i parametri di esecuzione (serie, ripetizioni, recupero)
@@ -10,7 +12,7 @@ public class WorkoutExercise {
     private int sets;
     private int reps;
     private int restTime; // Inteso in secondi (come da best practice)
-
+    private Exercise exercise;
     // Associazione con l'oggetto Exercise (il "catalogo")
     private Exercise exerciseDefinition;
 
@@ -21,6 +23,7 @@ public class WorkoutExercise {
     // Costruttore Completo
     public WorkoutExercise(Exercise exerciseDefinition, int sets, int reps, int restTime) {
         this.exerciseDefinition = exerciseDefinition;
+        this.exercise = exerciseDefinition;
         this.sets = sets;
         this.reps = reps;
         this.restTime = restTime;
@@ -81,6 +84,9 @@ public class WorkoutExercise {
     public void setExerciseDefinition(Exercise exerciseDefinition) {
         this.exerciseDefinition = exerciseDefinition;
     }
+    public Exercise getExercise() {
+        return exercise;
+    }
 
     @Override
     public String toString() {
@@ -90,4 +96,6 @@ public class WorkoutExercise {
         }
         return "Esercizio non definito";
     }
+
+
 }

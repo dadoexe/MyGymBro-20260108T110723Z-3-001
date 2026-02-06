@@ -6,16 +6,17 @@ import com.example.mygymbro.controller.PlanManagerController;
 
 import java.util.List;
 
-public interface WorkoutBuilderView {
+public interface WorkoutBuilderView extends View{
+
 
     String getPlanName();
 
      ExerciseBean getSelectedExercise();
-
+     void setPlanComment(String comment);
      String getSets();
 
      String getReps();
-
+    List<WorkoutExerciseBean> getAddedExercises();
 
      void setListener(PlanManagerController controller);
 

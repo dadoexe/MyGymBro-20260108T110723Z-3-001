@@ -1,15 +1,17 @@
 <?xml version="1.0" encoding="UTF-8"?>
+
 <?import javafx.scene.control.*?>
 <?import javafx.scene.layout.*?>
 <?import javafx.geometry.Insets?>
 
 <VBox xmlns="http://javafx.com/javafx" xmlns:fx="http://javafx.com/fxml"
       fx:controller="com.example.mygymbro.views.GraphicWorkoutBuilderView"
-      spacing="10" alignment="CENTER">
+      stylesheets="@style.css"
+      spacing="10" alignment="CENTER" styleClass="root">
 
     <padding><Insets top="20" right="20" bottom="20" left="20"/></padding>
 
-    <Label text="Crea Nuova Scheda" style="-fx-font-size: 20px; -fx-font-weight: bold;"/>
+    <Label text="Crea Nuova Scheda" styleClass="header-label"/>
 
     <TextField fx:id="txtPlanName" promptText="Nome della Scheda (es. Ipertrofia)" maxWidth="400"/>
     <TextArea fx:id="txtComment" promptText="Commenti..." maxWidth="400" prefHeight="50"/>
@@ -27,6 +29,7 @@
     <TableView fx:id="tableExercises" maxWidth="600" prefHeight="200">
         <columns>
             <TableColumn fx:id="colName" text="Esercizio" prefWidth="200"/>
+            <TableColumn fx:id="colMuscle" text="Gruppo" prefWidth="100"/>
             <TableColumn fx:id="colSets" text="Sets" prefWidth="50"/>
             <TableColumn fx:id="colReps" text="Reps" prefWidth="50"/>
             <TableColumn fx:id="colRest" text="Recupero" prefWidth="80"/>
@@ -34,8 +37,9 @@
     </TableView>
 
     <HBox spacing="20" alignment="CENTER">
-        <Button text="Annulla" onAction="#onCancel"/>
-        <Button fx:id="btnSave" text="SALVA SCHEDA" onAction="#onSavePlan" style="-fx-background-color: #4CAF50; -fx-text-fill: white;"/>
+        <Button text="Annulla" onAction="#onCancel" styleClass="btn-danger"/>
+
+        <Button fx:id="btnSave" text="SALVA SCHEDA" onAction="#onSavePlan" styleClass="btn-success"/>
     </HBox>
 
 </VBox>

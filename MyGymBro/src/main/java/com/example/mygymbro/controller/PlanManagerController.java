@@ -24,6 +24,7 @@ public class PlanManagerController implements Controller {
     private ExerciseDAO exerciseDAO;
     private WorkoutPlanBean currentPlan;
 
+
     // --- COSTRUTTORE 1: CREAZIONE NUOVO PIANO ---
     public PlanManagerController(WorkoutBuilderView view) {
         this.view = view;
@@ -82,8 +83,11 @@ public class PlanManagerController implements Controller {
     private void populateViewWithPlanData() {
         if (currentPlan == null) return;
         view.setPlanName(currentPlan.getName());
+        view.setPlanComment(currentPlan.getComment());
         view.updateExerciseTable(currentPlan.getExerciseList());
     }
+
+
 
     // --- MAPPING (Traduttori) ---
 
@@ -161,40 +165,56 @@ public class PlanManagerController implements Controller {
         return plan;
     }
 
+
+
     // --- LOGICA DI SALVATAGGIO ---
 
-    public void handleSavePlan() {
+    public void handleCancel() {
+        // Torna semplicemente alla Home / Dashboard
+        ApplicationController.getInstance().loadHome();
+    }
 
+    // Modifica il metodo handleSavePlan così:
+    public void handleSavePlan() {
         try {
-            // 1. Recupero i dati aggiornati dalla View (se necessario)
-            // Se la view aggiorna direttamente 'currentPlan' (binding), questo step è automatico.
-            // Altrimenti dovresti fare: currentPlan.setName(view.getPlanName()); etc.
+            // 1. Aggiorna i dati base dal form
             currentPlan.setName(view.getPlanName());
             currentPlan.setComment(view.getComment());
 
-            // Verifica di sicurezza (opzionale ma consigliata)
+            // 2. Recupera gli esercizi dalla tabella della View
+            // (Assicurati che GraphicWorkoutBuilderView abbia il metodo getAddedExercises())
+            List<WorkoutExerciseBean> exercisesFromTable = view.getAddedExercises();
+            currentPlan.setExerciseList(exercisesFromTable);
+
+            // Controllo validazione
             if (currentPlan.getName() == null || currentPlan.getName().trim().isEmpty()) {
                 view.showError("Devi dare un nome alla scheda!");
                 return;
             }
-            // 2. Converto BEAN -> MODEL
+
+            // 3. Converto BEAN -> MODEL
             WorkoutPlan planModel = toModelWorkoutPlan(currentPlan);
 
-            // 3. Salvo il MODEL tramite il DAO
-            workoutPlanDAO.save(planModel);
+            // 4. DECISIONE: INSERT o UPDATE?
+            if (currentPlan.getId() > 0) {
+                // Se l'ID è maggiore di 0, la scheda esiste già -> UPDATE
+                // Nota: Assicurati di avere il metodo update nel DAO!
+                workoutPlanDAO.update(planModel);
+                // Se non hai update(), spesso si usa delete(id) + save(model), ma è rischioso per gli ID.
+                // L'ideale è implementare update nel DAO.
+            } else {
+                // ID è 0 o null -> INSERT
+                workoutPlanDAO.save(planModel);
+            }
 
-            // 4. Feedback
-            // view.showMessage("Piano salvato con successo!");
-            // Opzionale: chiudere la finestra o tornare indietro
+            // 5. Torna alla dashboard
             ApplicationController.getInstance().loadHome();
 
         } catch (SQLException e) {
             view.showError("Errore Database: " + e.getMessage());
             e.printStackTrace();
-        } catch (IllegalStateException e) {
-            view.showError("Errore Dati: " + e.getMessage());
         } catch (Exception e) {
-            view.showError("Errore imprevisto: " + e.getMessage());
+            view.showError("Errore: " + e.getMessage());
             e.printStackTrace();
         }
     }

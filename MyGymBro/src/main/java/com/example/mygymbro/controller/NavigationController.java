@@ -1,6 +1,7 @@
 package com.example.mygymbro.controller;
 
 import com.example.mygymbro.bean.UserBean;
+import com.example.mygymbro.bean.WorkoutExerciseBean;
 import com.example.mygymbro.bean.WorkoutPlanBean;
 import com.example.mygymbro.dao.DAOFactory;
 import com.example.mygymbro.dao.WorkoutPlanDAO;
@@ -101,6 +102,7 @@ public class NavigationController implements Controller {
         // 1. Chiede all'ApplicationController di cambiare scena
         // e gli passa il bean da modificare
         ApplicationController.getInstance().loadWorkoutBuilder(planBean);
+
     }
 
     /**
@@ -116,10 +118,42 @@ public class NavigationController implements Controller {
             bean.setName(plan.getName());
             bean.setComment(plan.getComment());
             bean.setCreationDate(plan.getCreationDate());
-            // Se ti serve passare anche gli esercizi nel bean, dovresti convertirli qui
-            // Ma per la lista della dashboard (solo nomi e date) questo di solito basta.
+
+            // --- MODIFICA AGGIUNTA: Convertiamo anche la lista esercizi! ---
+            List<WorkoutExerciseBean> exerciseBeans = new ArrayList<>();
+            if (plan.getExercises() != null) {
+                for (com.example.mygymbro.model.WorkoutExercise modelEx : plan.getExercises()) {
+                    WorkoutExerciseBean exBean = new WorkoutExerciseBean();
+                    // --- PROTEZIONE ANTI-CRASH ---
+                    if (modelEx.getExercise() != null) {
+                        exBean.setExerciseName(modelEx.getExercise().getName());
+                    } else if (modelEx.getExerciseDefinition() != null) {
+                        // Tentativo di recupero dall'altro campo
+                        exBean.setExerciseName(modelEx.getExerciseDefinition().getName());
+                    } else {
+                        exBean.setExerciseName("Esercizio Sconosciuto");
+                    }
+                    // Nota: Assicurati che il Model WorkoutExercise abbia getters per questi campi
+
+                    // RECUPERO IL GRUPPO MUSCOLARE
+                    String muscle = "Misto"; // Valore di default
+                    if (modelEx.getExercise() != null && modelEx.getExercise().getMuscleGroup() != null) {
+                        muscle = modelEx.getExercise().getMuscleGroup().name();
+                    } else if (modelEx.getExerciseDefinition() != null && modelEx.getExerciseDefinition().getMuscleGroup() != null) {
+                        muscle = modelEx.getExerciseDefinition().getMuscleGroup().name();
+                    }
+
+                    exBean.setMuscleGroup(muscle);
+                    exBean.setSets(modelEx.getSets());
+                    exBean.setReps(modelEx.getReps());
+                    exBean.setRestTime(modelEx.getRestTime());
+                    exerciseBeans.add(exBean);
+                }
+            }
+            bean.setExerciseList(exerciseBeans);
+            // ---------------------------------------------------------------
+
             beans.add(bean);
         }
         return beans;
-    }
-}
+    }}

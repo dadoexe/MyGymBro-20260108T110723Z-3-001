@@ -12,4 +12,5 @@ public interface WorkoutPlanDAO {
     List<WorkoutPlanBean> loadPlansByUsername(String username) throws SQLException;
 
     void delete(int id) throws SQLException;
+    void update(WorkoutPlan plan) throws SQLException;
 }

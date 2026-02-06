@@ -6,5 +6,6 @@ public enum MuscleGroup {
     LEGS,       // Gambe
     SHOULDERS,  // Spalle
     ARMS,       // Braccia
-    CARDIO      // Cardio
+    CARDIO,   // Cardio
+    ABS
 }
