@@ -1,8 +1,10 @@
 package com.example.mygymbro.controller;
 
 import com.example.mygymbro.bean.UserBean;
-import com.example.mygymbro.dao.MySQLUserDAO;
+import com.example.mygymbro.dao.DAOFactory;
 import com.example.mygymbro.dao.UserDAO;
+import com.example.mygymbro.exceptions.InvalidCredentialsException; // <--- Importante!
+import com.example.mygymbro.model.PersonalTrainer;
 import com.example.mygymbro.model.User;
 import com.example.mygymbro.views.LoginView;
 
@@ -10,56 +12,65 @@ import java.sql.SQLException;
 
 public class LoginController implements Controller {
 
-    private UserDAO userDAO;// interfaccia per parlare col db
-    private LoginView view; //interfaccia per parlare con la grafica
+    private UserDAO userDAO;
+    private LoginView view;
 
     public LoginController(LoginView view) {
-        this.userDAO = new MySQLUserDAO();
         this.view = view;
+        this.userDAO = DAOFactory.getUserDAO();
     }
 
-    public void validateLogin(String username, String password) {
-        System.out.println("3. CONTROLLER: Ho ricevuto i dati! User: " + username +" " +password); // <--- SPIA 3
-        // 1. VALIDAZIONE INIZIALE (Input vuoti)
-        if (username == null || username.trim().isEmpty() ||
-                password == null || password.trim().isEmpty()) {
-            view.showMessage("Inserisci username e password.");
-            return; // Interrompiamo subito
+    public void checkLogin() {
+        String username = view.getUsername();
+        String password = view.getPassword();
+
+        if (username == null || username.isEmpty() || password == null || password.isEmpty()) {
+            view.showError("Inserisci username e password.");
+            return;
         }
 
         try {
-            // 2. RECUPERO UTENTE DAL DB (Tramite Model)
+            // 1. Chiediamo al DAO (Database)
             User userModel = userDAO.findByUsername(username);
 
-            // 3. VERIFICA PASSWORD
-            // Nota: in un'app reale useresti hash (BCrypt), qui va bene equals()
+            // 2. LOGICA DI BUSINESS CON ECCEZIONE
+            // Se l'utente non esiste O la password non corrisponde -> LANCIA ECCEZIONE
             if (userModel == null || !userModel.getPassword().equals(password)) {
-                view.showMessage("Credenziali non valide.");
-                return;
+                throw new InvalidCredentialsException("Credenziali non valide (Username o Password errati).");
             }
 
-            // 4. MAPPING MODEL -> BEAN (Solo ora creiamo il Bean!)
-            // Questo è il momento giusto: abbiamo i dati veri dal DB.
+            // --- Se siamo qui, il login è valido ---
+
+            // 3. Riempi il Bean
             UserBean userBean = new UserBean();
             userBean.setId(userModel.getId());
             userBean.setUsername(userModel.getUsername());
             userBean.setNome(userModel.getName());
             userBean.setCognome(userModel.getCognome());
             userBean.setEmail(userModel.getEmail());
-            // Non settiamo la password nel Bean di sessione per sicurezza, o se serve sì.
 
-            // 5. SALVATAGGIO IN SESSIONE
+            // 4. Assegna Ruolo
+            if (userModel instanceof PersonalTrainer) {
+                userBean.setRole("TRAINER");
+            } else {
+                userBean.setRole("ATHLETE");
+            }
+
+            // 5. Login in Sessione e Cambio Schermata
             SessionManager.getInstance().login(userBean);
+            view.showSuccess("Login effettuato! Ruolo: " + userBean.getRole());
+            ApplicationController.getInstance().loadHomeBasedOnRole();
 
-            // 6. NAVIGAZIONE VERSO LA HOME
-            ApplicationController.getInstance().loadHome();
+        } catch (InvalidCredentialsException e) {
+            // REQUISITO SODDISFATTO: Catturiamo la nostra eccezione personalizzata
+            view.showError("Accesso Negato: " + e.getMessage());
 
         } catch (SQLException e) {
             e.printStackTrace();
-            view.showMessage("Errore di connessione al database.");
+            view.showError("Errore tecnico del Database.");
         } catch (Exception e) {
             e.printStackTrace();
-            view.showMessage("Errore imprevisto: " + e.getMessage());
+            view.showError("Errore generico di sistema.");
         }
     }
 
@@ -68,6 +79,3 @@ public class LoginController implements Controller {
         this.userDAO = null;
     }
 }
-
-
-

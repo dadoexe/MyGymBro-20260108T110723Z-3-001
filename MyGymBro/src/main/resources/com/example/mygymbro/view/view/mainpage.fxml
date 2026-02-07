@@ -5,20 +5,42 @@
 <?import javafx.scene.layout.*?>
 <?import javafx.scene.text.*?>
 
-<BorderPane prefHeight="400.0" prefWidth="600.0" xmlns="http://javafx.com/javafx/17.0.12" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.example.mygymbro.views.GraphicAthleteView">
+<?import java.net.URL?>
+<BorderPane prefHeight="400.0" prefWidth="600.0" xmlns="http://javafx.com/javafx/17.0.12" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.example.mygymbro.views.gui.GraphicAthleteView">
+    <stylesheets>
+        <URL value="@style.css" />
+    </stylesheets>
 
     <top>
-        <VBox alignment="CENTER_LEFT" spacing="10.0" style="-fx-background-color: #f0f0f0;" BorderPane.alignment="CENTER">
-            <padding>
-                <Insets bottom="15.0" left="15.0" right="15.0" top="15.0" />
+        <VBox spacing="10" style="-fx-background-color: transparent;">
+
+            <HBox styleClass="top-bar" spacing="20" alignment="CENTER_LEFT">
+                <padding>
+                    <Insets top="15" right="20" bottom="15" left="20"/>
+                </padding>
+                <children>
+                    <Label fx:id="lblWelcome" text="Benvenuto, Atleta!" styleClass="header-label"/>
+                    <Region HBox.hgrow="ALWAYS" />
+                    <Button text="+ Nuova Scheda" onAction="#handleCreatePlan" styleClass="btn-success"/>
+                </children>
+            </HBox>
+
+            <HBox spacing="15" alignment="CENTER_LEFT"> <padding>
+                <Insets top="0" right="20" bottom="10" left="20"/>
             </padding>
-            <children>
-                <Label fx:id="lblWelcome" text="Benvenuto, Atleta!" textFill="#333333">
-                    <font>
-                        <Font name="System Bold" size="18.0" />
-                    </font>
-                </Label>
-            </children>
+                <children>
+                    <HBox spacing="15" alignment="CENTER_LEFT" style="-fx-background-color: #2B2B36; -fx-background-radius: 10; -fx-padding: 8 15 8 15;">
+                        <Label text="SCHEDE:" textFill="#aaaaaa" style="-fx-font-size: 12px; -fx-font-weight: bold;"/>
+                        <Label fx:id="lblTotalPlans" text="0" textFill="WHITE" style="-fx-font-size: 16px; -fx-font-weight: bold;"/>
+                    </HBox>
+
+                    <HBox spacing="15" alignment="CENTER_LEFT" style="-fx-background-color: #2B2B36; -fx-background-radius: 10; -fx-padding: 8 15 8 15;">
+                        <Label text="ULTIMA MODIFICA:" textFill="#aaaaaa" style="-fx-font-size: 12px; -fx-font-weight: bold;"/>
+                        <Label fx:id="lblLastActivity" text="--" textFill="#00E676" style="-fx-font-size: 14px; -fx-font-weight: bold;"/>
+                    </HBox>
+                </children>
+            </HBox>
+
         </VBox>
     </top>
 
@@ -34,25 +56,18 @@
                     </font>
                 </Label>
 
-                <ListView fx:id="listWorkouts" prefHeight="200.0" prefWidth="200.0" VBox.vgrow="ALWAYS" />
+                <ListView fx:id="listWorkoutPlans" prefHeight="200.0" prefWidth="200.0" VBox.vgrow="ALWAYS" />
+                <HBox spacing="15" alignment="CENTER_RIGHT" style="-fx-padding: 20;">
+                    <Button text="Logout" onAction="#handleLogout" styleClass="button"/>
 
-                <HBox alignment="CENTER_RIGHT" spacing="10" style="-fx-padding: 10px 0 0 0;">
-                    <Button onAction="#handleEditPlan" style="-fx-background-color: #FFC107; -fx-text-fill: black;" text="Modifica" />
-                    <Button onAction="#handleDeletePlan" style="-fx-background-color: #F44336; -fx-text-fill: white;" text="Elimina" />
+                    <Region HBox.hgrow="ALWAYS" /> <Button text="Modifica" onAction="#handleEditPlan" styleClass="button"/>
+                    <Button text="Elimina" onAction="#handleDeletePlan" styleClass="btn-danger"/>
                 </HBox>
+
                 <Label fx:id="lblInfo" text="Nessuna scheda presente" textFill="#666666" visible="false" />
             </children>
         </VBox>
     </center>
 
-    <bottom>
-        <VBox alignment="CENTER" BorderPane.alignment="CENTER">
-            <padding>
-                <Insets bottom="15.0" top="15.0" />
-            </padding>
-            <Button fx:id="btnCreatePlan" onAction="#handleCreatePlan" text="+ Nuova Scheda" />
-            <Button mnemonicParsing="false" text="Logout" />
-        </VBox>
-    </bottom>
 
 </BorderPane>

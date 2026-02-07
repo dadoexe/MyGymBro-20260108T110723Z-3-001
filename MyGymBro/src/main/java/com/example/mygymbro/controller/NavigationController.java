@@ -5,6 +5,7 @@ import com.example.mygymbro.bean.WorkoutExerciseBean;
 import com.example.mygymbro.bean.WorkoutPlanBean;
 import com.example.mygymbro.dao.DAOFactory;
 import com.example.mygymbro.dao.WorkoutPlanDAO;
+import com.example.mygymbro.exceptions.DAOException;
 import com.example.mygymbro.model.Athlete;
 import com.example.mygymbro.model.WorkoutPlan;
 import com.example.mygymbro.views.AthleteView;
@@ -15,128 +16,129 @@ import java.util.List;
 
 public class NavigationController implements Controller {
 
-    private final AthleteView athleteHome;
+    private AthleteView view;
     private WorkoutPlanDAO workoutPlanDAO;
-    private UserBean currentUser;
+    // currentUser lo recuperiamo dinamicamente, non serve salvarlo come attributo fisso
+    // per evitare che rimanga vecchio se l'utente cambia (caso raro, ma safer).
 
-    public NavigationController(AthleteView athleteHome) {
-        this.athleteHome = athleteHome;
-        // Istanziamo l'implementazione concreta del DAO
+    public NavigationController(AthleteView view) {
+        this.view = view;
         this.workoutPlanDAO = DAOFactory.getWorkoutPlanDAO();
-        // Recuperiamo l'utente dalla sessione
-        this.currentUser = SessionManager.getInstance().getCurrentUser();
     }
 
     public void loadDashboardData() {
+        UserBean currentUser = SessionManager.getInstance().getCurrentUser();
+
         if (currentUser == null) {
-            handleLogout();
+            logout(); // Se la sessione è scaduta, via al login
             return;
         }
 
-        // 1. Impostiamo il messaggio di benvenuto
-        athleteHome.setWelcomeMessage("Bentornato, " + currentUser.getUsername() + "!");
+        view.updateWelcomeMessage(currentUser.getUsername());
 
         try {
-            // 2. Preparazione per il DAO:
-            // Il DAO vuole un oggetto 'Athlete', ma noi abbiamo un 'UserBean'.
-            // Creiamo un oggetto Athlete temporaneo con l'ID dell'utente loggato.
-            // Il DAO usa solo l'ID per la query (WHERE Athlete_id = ?), quindi questo basta.
+            // Preparazione dati per il DAO
             Athlete currentAthleteModel = new Athlete();
             currentAthleteModel.setId(currentUser.getId());
             currentAthleteModel.setUsername(currentUser.getUsername());
 
-            // 3. Chiamata al DAO
+            // Chiamata al DAO
             List<WorkoutPlan> plans = workoutPlanDAO.findByAthlete(currentAthleteModel);
 
-            // 4. Conversione Model -> Bean
-            // La View si aspetta dei Bean, ma il DAO ci ha dato dei Model. Dobbiamo convertirli.
+            // Conversione
             List<WorkoutPlanBean> planBeans = convertModelsToBeans(plans);
 
-            // 5. Aggiornamento View
-            if (!planBeans.isEmpty()) {
-                athleteHome.showWorkoutPlans(planBeans);
-            } else {
-                athleteHome.showNoPlansMessage();
-            }
+            // Aggiornamento View
+            view.updateWorkoutList(planBeans);
 
-        } catch (SQLException e) {
+        } catch (Exception e) {
             e.printStackTrace();
-            // In un'app reale mostreresti un messaggio di errore all'utente
-            System.err.println("Errore nel caricamento delle schede: " + e.getMessage());
+            view.updateWorkoutList(new ArrayList<>());
+            view.showError("Impossibile caricare le schede.");
+        }
+    }
+    public void openPlanPreview(WorkoutPlanBean plan) {
+        ApplicationController.getInstance().loadWorkoutPreview(plan);
+    }
+    public void startLiveSession(WorkoutPlanBean plan) {
+        if (plan == null) return;
+        // Deleghiamo all'ApplicationController il cambio di scena (o di vista CLI)
+        ApplicationController.getInstance().loadLiveSession(plan);
+    }
+
+    // --- METODI DI AZIONE (Standardizzati per CLI e GUI) ---
+    public void handleCreateNewPlan() {
+        ApplicationController.getInstance().loadWorkoutBuilder();
+    }
+
+    // 1. Modifica Scheda
+    public void modifyPlan(WorkoutPlanBean plan) {
+        // L'atleta modifica se stesso, non serve specificare un owner esterno (sarà null)
+        ApplicationController.getInstance().loadWorkoutBuilder(plan, null);
+    }
+
+    // 2. Elimina Scheda
+    // Rinominato da 'handleDeletePlan' a 'deletePlan' per coerenza con la View CLI
+    public void deletePlan(WorkoutPlanBean planBean) {
+        try {
+            workoutPlanDAO.delete(planBean.getId());
+
+            view.showSuccess("Scheda '" + planBean.getName() + "' eliminata.");
+
+            loadDashboardData();
+
+        } catch (DAOException e) { // <--- CORREZIONE QUI: SQLException -> DAOException
+            e.printStackTrace();
+            view.showError("Errore cancellazione: " + e.getMessage());
         }
     }
 
-    public void handleLogout() {
-        SessionManager.getInstance().logout();
-        ApplicationController.getInstance().loadLogin();
+    // --- NAVIGAZIONE ---
+
+    public void loadWorkoutBuilder() {
+        // Nuova scheda vuota
+        ApplicationController.getInstance().loadWorkoutBuilder();
     }
 
-    public void handleCreateNewPlan() {
-        ApplicationController.getInstance().loadWorkoutBuilder();
+    public void logout() {
+        // Unica fonte di verità per il logout
+        ApplicationController.getInstance().logout();
     }
 
     @Override
     public void dispose() {
         this.workoutPlanDAO = null;
-        this.currentUser = null;
-    }
-    // --- METODI AGGIUNTI PER GESTIRE I BOTTONI ---
-
-    public void handleDeletePlan(WorkoutPlanBean planBean) {
-        try {
-            // 1. Il Controller ha il DAO, quindi PUÒ cancellare!
-            workoutPlanDAO.delete(planBean.getId());
-
-            // 2. Aggiorna la vista ricaricando i dati
-            loadDashboardData();
-
-            System.out.println("Scheda eliminata: " + planBean.getName());
-
-        } catch (SQLException e) {
-            e.printStackTrace();
-            System.err.println("Errore cancellazione: " + e.getMessage());
-        }
     }
 
-    public void handleEditPlan(WorkoutPlanBean planBean) {
-        // 1. Chiede all'ApplicationController di cambiare scena
-        // e gli passa il bean da modificare
-        ApplicationController.getInstance().loadWorkoutBuilder(planBean);
-
-    }
-
-    /**
-     * Metodo helper per convertire la lista di Model (dal DB) in lista di Bean (per la View)
-     */
+    // --- HELPER DI CONVERSIONE ---
     private List<WorkoutPlanBean> convertModelsToBeans(List<WorkoutPlan> models) {
         List<WorkoutPlanBean> beans = new ArrayList<>();
         if (models == null) return beans;
 
         for (WorkoutPlan plan : models) {
             WorkoutPlanBean bean = new WorkoutPlanBean();
-            bean.setId(plan.getId());
+            bean.setId(plan.getId()); // Fondamentale per l'eliminazione/modifica
             bean.setName(plan.getName());
             bean.setComment(plan.getComment());
             bean.setCreationDate(plan.getCreationDate());
 
-            // --- MODIFICA AGGIUNTA: Convertiamo anche la lista esercizi! ---
             List<WorkoutExerciseBean> exerciseBeans = new ArrayList<>();
             if (plan.getExercises() != null) {
                 for (com.example.mygymbro.model.WorkoutExercise modelEx : plan.getExercises()) {
                     WorkoutExerciseBean exBean = new WorkoutExerciseBean();
-                    // --- PROTEZIONE ANTI-CRASH ---
+
+                    // Logica difensiva per il nome esercizio
                     if (modelEx.getExercise() != null) {
                         exBean.setExerciseName(modelEx.getExercise().getName());
+
                     } else if (modelEx.getExerciseDefinition() != null) {
-                        // Tentativo di recupero dall'altro campo
                         exBean.setExerciseName(modelEx.getExerciseDefinition().getName());
                     } else {
-                        exBean.setExerciseName("Esercizio Sconosciuto");
+                        exBean.setExerciseName("Esercizio");
                     }
-                    // Nota: Assicurati che il Model WorkoutExercise abbia getters per questi campi
 
-                    // RECUPERO IL GRUPPO MUSCOLARE
-                    String muscle = "Misto"; // Valore di default
+                    // Logica difensiva per il gruppo muscolare
+                    String muscle = "Misto";
                     if (modelEx.getExercise() != null && modelEx.getExercise().getMuscleGroup() != null) {
                         muscle = modelEx.getExercise().getMuscleGroup().name();
                     } else if (modelEx.getExerciseDefinition() != null && modelEx.getExerciseDefinition().getMuscleGroup() != null) {
@@ -151,9 +153,8 @@ public class NavigationController implements Controller {
                 }
             }
             bean.setExerciseList(exerciseBeans);
-            // ---------------------------------------------------------------
-
             beans.add(bean);
         }
         return beans;
-    }}
+    }
+}

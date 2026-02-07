@@ -1,60 +1,54 @@
 package com.example.mygymbro.dao;
 
-/**
- * Factory Pattern
- * Questa classe è l'unico punto dell'applicazione che conosce la verità:
- * stiamo usando un Database vero o stiamo fingendo (Demo)?
- */
+
 public class DAOFactory {
 
-    // --- INTERRUTTORE GENERALE ---
-    // TRUE  = Versione Demo (Dati in RAM, si resettano alla chiusura)
-    // FALSE = Versione Produzione (Dati su MySQL + API Reale)
+    private static boolean isDemoMode = false;
 
-    private static final boolean IS_DEMO_VERSION = false;
+    // --- NUOVA CONFIGURAZIONE ---
+    // Imposta questo a TRUE per testare il salvataggio su FILE per l'esame.
+    // Imposta a FALSE per usare MySQL.
+    public static boolean CONF_USE_FILESYSTEM = false;
 
+    public static void setDemoMode(boolean active) {
+        isDemoMode = active;
+        System.out.println("DAOFactory: Modalità DEMO (RAM) impostata su " + active);
+    }
 
-    /**
-     * Restituisce l'implementazione corretta per la gestione Utenti
-     */
     public static UserDAO getUserDAO() {
-        if (IS_DEMO_VERSION) {
+        if (isDemoMode) {
             return new InMemoryUserDAO();
         } else {
+
             return new MySQLUserDAO();
         }
     }
-
-    /**
-     * Restituisce l'implementazione corretta per i Piani di Allenamento
-     */
-    public static WorkoutPlanDAO getWorkoutPlanDAO() {
-        if (IS_DEMO_VERSION) {
-            return new InMemoryWorkoutPlanDAO();
+    public static PersonalTrainerDAO getPersonalTrainerDAO() {
+        if (isDemoMode) {
+            // In demo mode usiamo la classe finta per popolare la tabella
+            return new InMemoryPersonalTrainerDAO();
         } else {
+            return null;
+        }
+    }
+
+    public static WorkoutPlanDAO getWorkoutPlanDAO() {
+        // 1. Priorità alla DEMO MODE (Requisito: In-Memory Only)
+        if (isDemoMode) {
+            return new InMemoryWorkoutPlanDAO();
+        }
+
+        // 2. Se siamo in FULL MODE, scegliamo la persistenza
+        if (CONF_USE_FILESYSTEM) {
+            System.out.println("DAOFactory: Utilizzo FileSystemDAO");
+            return new FileSystemWorkoutPlanDAO(); // <--- Il nuovo DAO
+        } else {
+            System.out.println("DAOFactory: Utilizzo MySQLDAO");
             return new MySQLWorkoutPlanDAO();
         }
     }
 
-    /**
-     * Restituisce l'implementazione per gli Esercizi.
-     * * NOTA: Qui la logica è leggermente diversa.
-     * L'API esterna (RestApiExerciseDAO) è "Read-Only" e non richiede un DB locale,
-     * quindi è perfetta sia per la Demo che per la versione Reale.
-     * Se però volessi usare il vecchio DB MySQL locale, puoi cambiare il ramo else.
-     */
     public static ExerciseDAO getExerciseDAO() {
-        if (IS_DEMO_VERSION) {
-            // Nella Demo usiamo comunque l'API perché è figa e non richiede setup database
-            return new RestApiExerciseDAO();
-        } else {
-            // In Produzione usiamo l'API
-            return new RestApiExerciseDAO();
-
-            // OPPURE: se volessi tornare al vecchio DB locale:
-            // return new MySQLExerciseDAO();
-        }
+        return new RestApiExerciseDAO();
     }
-
 }
-

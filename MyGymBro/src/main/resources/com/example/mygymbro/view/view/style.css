@@ -23,6 +23,24 @@
     -fx-highlight-fill: #4CAF50;   /* Colore selezione testo */
     -fx-highlight-text-fill: white;
 }
+/* --- UNIFORMIAMO GLI INPUT (Builder Bar) --- */
+.text-field, .combo-box, .button {
+    -fx-pref-height: 38px;  /* Altezza fissa per tutti */
+    -fx-min-height: 38px;   /* Impedisce che si rimpiccioliscano */
+    -fx-font-size: 14px;    /* Stessa grandezza testo */
+    -fx-background-radius: 5; /* Arrotondamento uguale */
+}
+
+/* Specifico per centrare il testo verticalmente nei campi */
+.text-field {
+    -fx-padding: 0 10 0 10; /* Padding: Top Right Bottom Left */
+    -fx-alignment: CENTER_LEFT;
+}
+
+/* Fix per il bottone "Aggiungi" per farlo risaltare */
+.button {
+    -fx-padding: 5 15 5 15;
+}
 
 /* Fix specifico per l'interno della TextArea che spesso rimane bianco */
 .text-area .content {
@@ -33,6 +51,16 @@
 .text-field:focused, .text-area:focused {
     -fx-border-color: #4CAF50;
     -fx-border-radius: 5;
+}
+/* Stile per la durata stimata */
+.time-label {
+    -fx-font-size: 16px;
+    -fx-font-weight: bold;
+    -fx-text-fill: #00E676; /* Verde accesso */
+    -fx-effect: dropshadow(three-pass-box, rgba(0, 230, 118, 0.3), 10, 0, 0, 0);
+    -fx-border-color: #00E676;
+    -fx-border-radius: 5;
+    -fx-padding: 5 10 5 10; /* Un po' di spazio interno */
 }
 
 /* --- COMBOBOX (Menu a tendina) - IL FIX CHE CERCAVI --- */
@@ -107,6 +135,13 @@
     -fx-alignment: center-left;
 }
 
+.top-bar {
+    /* Un grigio leggermente più chiaro dello sfondo per staccare */
+    -fx-background-color: #2B2B36;
+    /* Ombra leggera sotto la barra */
+    -fx-effect: dropshadow(three-pass-box, rgba(0,0,0,0.4), 10, 0, 0, 2);
+}
+
 /* --- BOTTONI --- */
 .button {
     -fx-background-color: #444455;
@@ -119,15 +154,106 @@
     -fx-background-color: #555566;
 }
 .btn-success {
-    -fx-background-color: #4CAF50;
-    -fx-text-fill: white;
+    -fx-background-color: #00E676; /* Verde Neon brillante */
+    -fx-text-fill: #1E1E24; /* Testo scuro per contrasto */
+    -fx-font-weight: bold;
+    -fx-background-radius: 20; /* Arrotondato */
+    -fx-padding: 8 20 8 20;
 }
+
 .btn-success:hover {
-    -fx-background-color: #45a049;
+    -fx-background-color: #00C853;
+    -fx-effect: dropshadow(three-pass-box, rgba(0,230,118,0.4), 10, 0, 0, 0);
 }
 .btn-danger {
     -fx-background-color: #FF5252;
 }
 .btn-danger:hover {
     -fx-background-color: #ff3333;
+}
+/* --- LISTA SCHEDE (ListView) --- */
+.list-view {
+    -fx-background-color: transparent;
+    -fx-padding: 10;
+}
+/* Dimensione delle righe */
+.list-view .virtual-flow .clipped-container .sheet .cell {
+    -fx-cell-size: 50px;
+}
+
+/* Il contenitore delle celle */
+.list-view .virtual-flow .clipped-container .sheet .cell {
+    -fx-cell-size: 50px; /* Celle più alte per dare respiro */
+}
+
+/* 1. STILE BASE (Trasparente per le celle vuote) */
+.list-cell {
+    -fx-background-color: transparent; /* Di base è invisibile! */
+    -fx-text-fill: white;
+    -fx-font-size: 16px;
+    -fx-padding: 5 10 5 10;
+}
+
+/* 2. STILE SOLO PER CELLE PIENE (:filled) */
+/* Questo applica il colore e il bordo SOLO se c'è una scheda */
+.list-cell:filled {
+    -fx-background-color: #2B2B36;
+    -fx-background-radius: 10;
+    -fx-border-color: #1E1E24;
+    -fx-border-width: 0 0 5 0;
+}
+
+/* 3. STILE PER CELLE VUOTE (:empty) - Sicurezza extra */
+.list-cell:empty {
+    -fx-background-color: transparent;
+    -fx-border-color: transparent;
+}
+
+/* Hover solo su celle piene */
+.list-cell:filled:hover {
+    -fx-background-color: #383845;
+    -fx-cursor: hand;
+    -fx-effect: dropshadow(three-pass-box, rgba(0,0,0,0.3), 5, 0, 0, 1);
+}
+/* Quando selezioni una scheda */
+.list-cell:filled:selected {
+    -fx-background-color: #2B2B36; /* Rimane scuro */
+    -fx-border-color: #00E676; /* Bordo Verde Neon */
+    -fx-border-width: 2; /* Bordo visibile */
+    -fx-text-fill: #00E676; /* Testo verde */
+}
+
+/* Nascondiamo la scrollbar brutta di default (Opzionale) */
+.list-view .scroll-bar:vertical .thumb {
+    -fx-background-color: #555;
+    -fx-background-radius: 5;
+}
+/* --- TIMER BOX: Stato WORK (Esecuzione) --- */
+.timer-box-work {
+    -fx-background-color: #2B2B36; /* Grigio Scuro */
+    -fx-background-radius: 20;
+}
+
+.label-timer-work {
+    -fx-text-fill: white;
+}
+
+.label-status-work {
+    -fx-text-fill: #888888;
+    -fx-font-weight: bold;
+}
+
+/* --- TIMER BOX: Stato REST (Recupero) --- */
+.timer-box-rest {
+    -fx-background-color: #00E676; /* Verde Acceso */
+    -fx-background-radius: 20;
+}
+
+.label-timer-rest {
+    -fx-text-fill: #1E1E24; /* Testo Scuro per contrasto col verde */
+}
+
+.label-status-rest {
+    -fx-text-fill: #1E1E24;
+    -fx-font-weight: bold;
 }
